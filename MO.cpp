@@ -3,7 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <math.h>
-#define N 12
+#define N 13
 #define PI 3.14159265358979323846
 #define PHI 1.61803398874989484820
 #define EPSILON 0.1
