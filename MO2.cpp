@@ -21,7 +21,7 @@ double sign(double x) {
 
 void clear(double arr[100]) {
     for (int i = 0; i < 100; i++) {
-        arr[i++] = 0;
+        arr[i] = 0;
     }
 }
 
