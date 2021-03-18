@@ -151,7 +151,7 @@ result brent(double a, double b, double eps) {
         if ((x1 != x2 && x2 != x3 && x3 != x1) &&
             (f1 != f2 && f2 != f3 && f3 != f1) &&
             (u = getParabolaMin(x1, f1, x2, f2, x3, f3),
-                (u >= a + eps && u <= b - eps && 2 * abs(u - x1) < prev2_step)))
+                    (u >= a + eps && u <= b - eps && 2 * abs(u - x1) < prev2_step)))
         {
             step = abs(u - x1);
         } else if (2 * x1 < b - a) {
