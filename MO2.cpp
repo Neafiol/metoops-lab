@@ -76,31 +76,46 @@ double * goldenRatio(double eps, int n) {
     return res;
 }
 
-double * fibonacci(double eps, int n) {
+int fib_index(double x) {
+    double fib1 = 1;
+    double fib2 = 1;
+    int n = 2;
+
+    while (fib2 < x) {
+        double fib3 = fib1 + fib2;
+        fib1 = fib2;
+        fib2 = fib3;
+        ++n;
+    }
+    return n;
+}
+
+double * fibonacci(double eps, int n2) {
     static double res[100];
     clear(res);
     int i = 2;
     double a = 0;
     double b = 2 * PI;
 
-    double len = (b - a) * fib(n) / fib(n + 1) + (pow(-1, n) * eps) / fib(n + 1);
-    double x2 = a + len;
-    res[i++] = x2;
+    int n = fib_index((b - a) / eps) - 2;
+    double x1 = a + (b - a) * fib(n) / fib(n + 2);
+    res[i++] = x1;
+
     for (int k = 1; k < n; k++) {
-        double x1 = a + (b - x2);
-        res[i++] = x1;
-        double f1 = func(x1);
+        double x2 = a + (b - x1);
+        res[i++] = x2;
         double f2 = func(x2);
-        if (x1 > x2 && f1 < f2) {
-            a = x2;
-            x2 = x1;
-        } else if (x1 < x2 && f1 < f2) {
-            b = x2;
-            x2 = x1;
-        } else if (x1 < x2 && f1 >= f2) {
+        double f1 = func(x1);
+        if (x2 > x1 && f2 < f1) {
             a = x1;
-        } else {
+            x1 = x2;
+        } else if (x2 < x1 && f2 < f1) {
             b = x1;
+            x1 = x2;
+        } else if (x2 < x1 && f2 >= f1) {
+            a = x2;
+        } else {
+            b = x2;
         }
     }
     res[0] = (b - a) / 2;
@@ -225,7 +240,7 @@ double * brent(double eps, int n) {
 int main() {
     std::cout << std::fixed;
     std::cout << std::setprecision(10);
-    double *arr = bisection(0.0000001, 30);
+    double *arr = fibonacci(0.0001, 30);
     for (int i = 0; i < 100; i++) {
         std::cout << arr[i] << '\n';
     }

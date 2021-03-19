@@ -57,6 +57,7 @@ result bisection(double a, double b, double eps) {
 result goldenRatio(double a, double b, double eps) {
     double x1 = a + (1 - TAU) * (b - a);
     double x2 = a + TAU * (b - a);
+
     while (b - a > 2 * eps) {
         //std::cout << a << " & " << b << " & " << b - a << " & " << x1 << " & " << x2 << " & " << func(x1) << " & " << func(x2) << "\n";
         if (func(x1) > func(x2)) {
@@ -72,24 +73,39 @@ result goldenRatio(double a, double b, double eps) {
     return getResult(a, b);
 }
 
-result fibonacci(double a, double b, double eps, int n) {
-    double len = (b - a) * fib(n) / fib(n + 1) + (pow(-1, n) * eps) / fib(n + 1);
-    double x2 = a + len;
+int fib_index(double x) {
+    double fib1 = 1;
+    double fib2 = 1;
+    int n = 2;
+
+    while (fib2 < x) {
+        double fib3 = fib1 + fib2;
+        fib1 = fib2;
+        fib2 = fib3;
+        ++n;
+    }
+    return n;
+}
+
+result fibonacci(double a, double b, double eps) {
+    int n = fib_index((b - a) / eps) - 2;
+    double x1 = a + (b - a) * fib(n) / fib(n + 2);
+
     for (int k = 1; k < n; k++) {
-        double x1 = a + (b - x2);
-        //std::cout << a << " & " << b << " & " << b - a << " & " << x1 << " & " << x2 << " & " << func(x1) << " & " << func(x2) << "\n";
-        double f1 = func(x1);
+        double x2 = a + (b - x1);
+//        std::cout << a << " & " << b << " & " << b - a << " & " << x2 << " & " << x1 << " & " << func(x2) << " & " << func(x1) << "\n";
         double f2 = func(x2);
-        if (x1 > x2 && f1 < f2) {
-            a = x2;
-            x2 = x1;
-        } else if (x1 < x2 && f1 < f2) {
-            b = x2;
-            x2 = x1;
-        } else if (x1 < x2 && f1 >= f2) {
+        double f1 = func(x1);
+        if (x2 > x1 && f2 < f1) {
             a = x1;
-        } else {
+            x1 = x2;
+        } else if (x2 < x1 && f2 < f1) {
             b = x1;
+            x1 = x2;
+        } else if (x2 < x1 && f2 >= f1) {
+            a = x2;
+        } else {
+            b = x2;
         }
     }
     return getResult(a, b);
@@ -99,6 +115,7 @@ result parabola(double x1, double x2, double x3, double eps) {
     double x = x1;
     double prev_x = x;
     double step = x3 - x1;
+
     while (step > eps) {
         double f1 = func(x1);
         double f2 = func(x2);
@@ -198,7 +215,7 @@ int main() {
 
     bisection(a, b, eps);
     goldenRatio(a, b, eps);
-    fibonacci(a, b, eps, 30);
+    fibonacci(a, b, eps);
 
     double n = (b - a) / 20;
     double i;
