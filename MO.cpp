@@ -7,6 +7,17 @@
 #define PHI 1.61803398874989484820
 #define TAU 0.61803398874989484820
 
+void print(std::vector<double> const& v) {
+    for (int i = 0; i < v.size();) {
+        std::cout << v[i];
+        if (++i < v.size()) {
+            std::cout << " & ";
+        } else {
+            std::cout << '\n';
+        }
+    }
+}
+
 double func(double x) {
     return - (3 * x * sin(0.75 * x)) + exp(-2 * x);
 }
@@ -40,6 +51,10 @@ result getResult(double a, double b) {
     return getResult(a, b, (a + b) / 2);
 }
 
+/**
+ * [a, b]  начальный интервал
+ * eps  желаемая абсолютная погрешность
+ */
 result bisection(double a, double b, double eps) {
     while (b - a > 2 * eps) {
         double x1 = (a + b - eps) / 2;
@@ -54,6 +69,10 @@ result bisection(double a, double b, double eps) {
     return getResult(a, b);
 }
 
+/**
+ * [a, b]  начальный интервал
+ * eps  желаемая абсолютная погрешность
+ */
 result goldenRatio(double a, double b, double eps) {
     double x1 = a + (1 - TAU) * (b - a);
     double x2 = a + TAU * (b - a);
@@ -87,15 +106,19 @@ int fib_index(double x) {
     return n;
 }
 
+/**
+ * [a, b]  начальный интервал
+ * eps  желаемая абсолютная погрешность
+ */
 result fibonacci(double a, double b, double eps) {
     int n = fib_index((b - a) / eps) - 2;
     double x1 = a + (b - a) * fib(n) / fib(n + 2);
 
     for (int k = 1; k < n; k++) {
         double x2 = a + (b - x1);
-//        std::cout << a << " & " << b << " & " << b - a << " & " << x2 << " & " << x1 << " & " << func(x2) << " & " << func(x1) << "\n";
         double f2 = func(x2);
         double f1 = func(x1);
+//        std::cout << a << " & " << b << " & " << b - a << " & " << x1 << " & " << x2 << " & " << f1 << " & " << f2 << "\n";
         if (x2 > x1 && f2 < f1) {
             a = x1;
             x1 = x2;
@@ -111,6 +134,10 @@ result fibonacci(double a, double b, double eps) {
     return getResult(a, b);
 }
 
+/**
+ * x1, x2, x3  точки, по которым строится начальная парабола (x1 < x2 < x3)
+ * eps  желаемая абсолютная погрешность
+ */
 result parabola(double x1, double x2, double x3, double eps) {
     double x = x1;
     double prev_x = x;
@@ -122,11 +149,11 @@ result parabola(double x1, double x2, double x3, double eps) {
         double f3 = func(x3);
 //        double a1 = f1;
         double a2 = (f2 - f1) / (x2 - x1);
-        double a3 = (((f3 - f1) / (x3 - x1)) - ((f2 - f1) / (x2 - x1))) / (x3 - x2);
+        double a3 = (((f3 - f1) / (x3 - x1)) - a2) / (x3 - x2);
         x = 0.5 * (x1 + x2 - (a2 / a3));
         double f = func(x);
         step = abs(x - prev_x);
-        //std::cout << x1 << " & " << x2 << " & " << x3 << " & " << step << " & " << a1 << " & " << a2 << " & " << a3 << " & " << x << " & " << f2 << " & " << f << "\n";
+//        std::cout << x1 << " & " << x2 << " & " << x3 << " & " << step << " & " << f1 << " & " << f2 << " & " << f3 << " & " << x << " & " << f << "\n";
         if (x1 < x && x < x2 && f >= f2) {
             x1 = x;
         } else if (x1 < x && x < x2 && f < f2) {
@@ -149,6 +176,10 @@ double getParabolaMin(double x1, double y1, double x2, double y2, double x3, dou
     return -b / (2 * a);
 }
 
+/**
+ * [a, b]  начальный интервал
+ * eps  желаемая абсолютная погрешность
+ */
 result brent(double a, double b, double eps) {
     double x1, x2, x3;
     double f1, f2, f3;
@@ -158,7 +189,6 @@ result brent(double a, double b, double eps) {
     step = prev_step = b - a;
 
     while (step > eps) {
-//        std::cout << a << " & " << b << " & " << x1 << " & " << x2 << " & " << x3 << '\n';
         double prev2_step = prev_step;
         prev_step = step;
         double u;
@@ -201,6 +231,7 @@ result brent(double a, double b, double eps) {
                 f3 = fu;
             }
         }
+//        print({x1, x2, x3, step, f1, f2, f3, u, fu});
     }
     return getResult(a, b, x1);
 }
@@ -209,7 +240,7 @@ int main() {
     std::cout << std::fixed;
     std::cout << std::setprecision(10);
 
-    double eps = 0.00001;
+    double eps = 0.0000001;
     double a = 0;
     double b = 2 * PI;
 
