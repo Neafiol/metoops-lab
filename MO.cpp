@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <math.h>
+
 #define PI 3.14159265358979323846
 #define PHI 1.61803398874989484820
 #define TAU 0.61803398874989484820
@@ -13,7 +14,7 @@ void print(std::vector<double> const& v) {
         if (++i < v.size()) {
             std::cout << " & ";
         } else {
-            std::cout << '\n';
+            std::cout << std::endl;
         }
     }
 }
@@ -38,8 +39,8 @@ struct result {
 };
 
 result getResult(double a, double b, double x, double fx) {
-//    std::cout << "Final interval is : [ " << a << " ; " << b << " ]\n";
-//    std::cout << "The min value is : " << fx << '\n';
+    // std::cout << "Final interval is : [ " << a << " ; " << b << " ]\n";
+    // std::cout << "The min value is : " << fx << '\n';
     return {a, b, x, fx};
 }
 
@@ -59,7 +60,7 @@ result bisection(double a, double b, double eps) {
     while (b - a > 2 * eps) {
         double x1 = (a + b - eps) / 2;
         double x2 = (a + b + eps) / 2;
-        //std::cout << a << " & " << b << " & " << b - a << " & " << x1 << " & " << x2 << " & " << func(x1) << " & " << func(x2) << "\n";
+        // print({a, b, b - a, x1, x2, func(x1), func(x2)});
         if (func(x1) <= func(x2)) {
             b = x2;
         } else {
@@ -76,17 +77,31 @@ result bisection(double a, double b, double eps) {
 result goldenRatio(double a, double b, double eps) {
     double x1 = a + (1 - TAU) * (b - a);
     double x2 = a + TAU * (b - a);
+    double f1 = func(x1);
+    double f2 = func(x2);
 
-    while (b - a > 2 * eps) {
-        //std::cout << a << " & " << b << " & " << b - a << " & " << x1 << " & " << x2 << " & " << func(x1) << " & " << func(x2) << "\n";
-        if (func(x1) > func(x2)) {
+    while (true) {
+        // print({a, b, b - a, x1, x2, f1, f2});
+        if (f1 > f2) {
             a = x1;
-            x1 = x2;
-            x2 = a + TAU * (b - a);
         } else {
             b = x2;
+        }
+
+        if (b - a < 2 * eps) {
+            break;
+        }
+
+        if (f1 > f2) {
+            x1 = x2;
+            x2 = a + TAU * (b - a);
+            f1 = f2;
+            f2 = func(x2);
+        } else {
             x2 = x1;
             x1 = a + (1 - TAU) * (b - a);
+            f2 = f1;
+            f1 = func(x1);
         }
     }
     return getResult(a, b);
@@ -113,19 +128,21 @@ int fib_index(double x) {
 result fibonacci(double a, double b, double eps) {
     int n = fib_index((b - a) / eps) - 2;
     double x1 = a + (b - a) * fib(n) / fib(n + 2);
+    double f1 = func(x1);
 
     for (int k = 1; k < n; k++) {
         double x2 = a + (b - x1);
         double f2 = func(x2);
-        double f1 = func(x1);
-//        std::cout << a << " & " << b << " & " << b - a << " & " << x1 << " & " << x2 << " & " << f1 << " & " << f2 << "\n";
+        // print({a, b, b - a, x1, x2, f1, f2});
         if (x2 > x1 && f2 < f1) {
             a = x1;
             x1 = x2;
+            f1 = f2;
         } else if (x2 < x1 && f2 < f1) {
             b = x1;
             x1 = x2;
-        } else if (x2 < x1 && f2 >= f1) {
+            f1 = f2;
+        } else if (x2 < x1) {
             a = x2;
         } else {
             b = x2;
@@ -142,28 +159,34 @@ result parabola(double x1, double x2, double x3, double eps) {
     double x = x1;
     double prev_x = x;
     double step = x3 - x1;
+    double f1 = func(x1);
+    double f2 = func(x2);
+    double f3 = func(x3);
 
     while (step > eps) {
-        double f1 = func(x1);
-        double f2 = func(x2);
-        double f3 = func(x3);
 //        double a1 = f1;
         double a2 = (f2 - f1) / (x2 - x1);
         double a3 = (((f3 - f1) / (x3 - x1)) - a2) / (x3 - x2);
         x = 0.5 * (x1 + x2 - (a2 / a3));
         double f = func(x);
         step = abs(x - prev_x);
-//        std::cout << x1 << " & " << x2 << " & " << x3 << " & " << step << " & " << f1 << " & " << f2 << " & " << f3 << " & " << x << " & " << f << "\n";
+        // print({x1, x2, x3, step, f1, f2, f3, x, f});
         if (x1 < x && x < x2 && f >= f2) {
             x1 = x;
+            f1 = f;
         } else if (x1 < x && x < x2 && f < f2) {
             x3 = x2;
             x2 = x;
+            f3 = f2;
+            f2 = f;
         } else if (x2 < x && x < x3 && f2 >= f) {
             x1 = x2;
             x2 = x;
+            f1 = f2;
+            f2 = f;
         } else {
             x3 = x;
+            f3 = f;
         }
         prev_x = x;
     }
@@ -231,7 +254,7 @@ result brent(double a, double b, double eps) {
                 f3 = fu;
             }
         }
-//        print({x1, x2, x3, step, f1, f2, f3, u, fu});
+        // print({x1, x2, x3, step, f1, f2, f3, u, fu});
     }
     return getResult(a, b, x1);
 }
