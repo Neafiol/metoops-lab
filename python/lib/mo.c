@@ -18,16 +18,21 @@ double sign(double x) {
     return (x > 0) - (x < 0);
 }
 
-void clear(double arr[100]) {
-    for (int i = 0; i < 100; i++) {
-        arr[i] = 0;
+int max(int num1, int num2)
+{
+    return (num1 > num2 ) ? num1 : num2;
+}
+
+void complete(double *arr, int idx) {
+    idx = max(idx - 1, 0);
+    for (int i = idx; i < 100; i++) {
+        arr[i] = arr[idx];
     }
 }
 
 double * bisection(double eps, int n) {
     static double res[100];
-    clear(res);
-    int i = 2;
+    int i = 0;
     double a = 0;
     double b = 2 * PI;
 
@@ -42,36 +47,47 @@ double * bisection(double eps, int n) {
             res[i++] = x1;
         }
     }
-    res[0] = (b - a) / 2;
-    res[1] = i - 2;
+    complete(res, i);
     return res;
 }
 
 double * goldenRatio(double eps, int n) {
     static double res[100];
-    clear(res);
-    int i = 2;
+    int i = 0;
     double a = 0;
     double b = 2 * PI;
 
     double x1 = a + (1 - TAU) * (b - a);
     double x2 = a + TAU * (b - a);
+    double f1 = func(x1);
+    double f2 = func(x2);
 
-    while (b - a > 2 * eps) {
-        if (func(x1) > func(x2)) {
+    while (1) {
+        if (f1 > f2) {
             a = x1;
-            x1 = x2;
-            x2 = a + TAU * (b - a);
-            res[i++] = x2;
         } else {
             b = x2;
+        }
+
+        if (b - a < 2 * eps) {
+            break;
+        }
+
+        if (f1 > f2) {
+            x1 = x2;
+            x2 = a + TAU * (b - a);
+            f1 = f2;
+            f2 = func(x2);
+            res[i++] = x2;
+        } else {
             x2 = x1;
             x1 = a + (1 - TAU) * (b - a);
+            f2 = f1;
+            f1 = func(x1);
             res[i++] = x1;
         }
     }
-    res[0] = (b - a) / 2;
-    res[1] = i - 2;
+    complete(res, i);
     return res;
 }
 
@@ -91,42 +107,40 @@ int fib_index(double x) {
 
 double * fibonacci(double eps, int n2) {
     static double res[100];
-    clear(res);
-
-    int i = 2;
+    int i = 0;
     double a = 0;
     double b = 2 * PI;
 
     int n = fib_index((b - a) / eps) - 2;
     double x1 = a + (b - a) * fib(n) / fib(n + 2);
+    double f1 = func(x1);
     res[i++] = x1;
 
     for (int k = 1; k < n; k++) {
         double x2 = a + (b - x1);
-        res[i++] = x2;
         double f2 = func(x2);
-        double f1 = func(x1);
+        res[i++] = x2;
         if (x2 > x1 && f2 < f1) {
             a = x1;
             x1 = x2;
+            f1 = f2;
         } else if (x2 < x1 && f2 < f1) {
             b = x1;
             x1 = x2;
-        } else if (x2 < x1 && f2 >= f1) {
+            f1 = f2;
+        } else if (x2 < x1) {
             a = x2;
         } else {
             b = x2;
         }
     }
-    res[0] = (b - a) / 2;
-    res[1] = n+1;
+    complete(res, i);
     return res;
 }
 
 double * parabola(double eps, int n) {
     static double res[100];
-    clear(res);
-    int i = 2;
+    int i = 0;
     double x1 = 0;
     double x2;
     double x3 = 2 * PI;
@@ -139,31 +153,37 @@ double * parabola(double eps, int n) {
     double x = x1;
     double prev_x = x;
     double step = x3 - x1;
+    double f1 = func(x1);
+    double f2 = func(x2);
+    double f3 = func(x3);
+
     while (step > eps) {
-        double f1 = func(x1);
-        double f2 = func(x2);
-        double f3 = func(x3);
         double a2 = (f2 - f1) / (x2 - x1);
-        double a3 = (((f3 - f1) / (x3 - x1)) - ((f2 - f1) / (x2 - x1))) / (x3 - x2);
+        double a3 = (((f3 - f1) / (x3 - x1)) - a2) / (x3 - x2);
         x = 0.5 * (x1 + x2 - (a2 / a3));
         double f = func(x);
-        step = fabs(x - prev_x);
+        step = abs(x - prev_x);
         if (x1 < x && x < x2 && f >= f2) {
             x1 = x;
+            f1 = f;
         } else if (x1 < x && x < x2 && f < f2) {
             x3 = x2;
             x2 = x;
+            f3 = f2;
+            f2 = f;
         } else if (x2 < x && x < x3 && f2 >= f) {
             x1 = x2;
             x2 = x;
+            f1 = f2;
+            f2 = f;
         } else {
             x3 = x;
+            f3 = f;
         }
         res[i++] = x;
         prev_x = x;
     }
-    res[0] = step;
-    res[1] = i - 2;
+    complete(res, i);
     return res;
 }
 
@@ -175,8 +195,7 @@ double getParabolaMin(double x1, double y1, double x2, double y2, double x3, dou
 
 double * brent(double eps, int n) {
     static double res[100];
-    clear(res);
-    int i = 2;
+    int i = 0;
     double a = 0;
     double b = 2 * PI;
 
@@ -195,9 +214,9 @@ double * brent(double eps, int n) {
         if ((x1 != x2 && x2 != x3 && x3 != x1) &&
             (f1 != f2 && f2 != f3 && f3 != f1) &&
             (u = getParabolaMin(x1, f1, x2, f2, x3, f3),
-                (u >= a + eps && u <= b - eps && 2 * fabs(u - x1) < prev2_step)))
+                (u >= a + eps && u <= b - eps && 2 * abs(u - x1) < prev2_step)))
         {
-            step = fabs(u - x1);
+            step = abs(u - x1);
         } else if (2 * x1 < b - a) {
             step = b - x1;
             u = x1 + (1 - TAU) * step;
@@ -205,18 +224,13 @@ double * brent(double eps, int n) {
             step = x1 - a;
             u = x1 - (1 - TAU) * step;
         }
-        if (fabs(u - x1) < eps) {
+        if (abs(u - x1) < eps) {
             u = x1 + sign(u - x1) * eps;
         }
 
         double fu = func(u);
         if (fu <= f1) {
-            if(u >= x1) {
-            a=x1;
-            }
-            else {
-                b=x1;
-            }
+            if(u >= x1) {a = x1;}else{b=x1;};
             x3 = x2;
             x2 = x1;
             x1 = u;
@@ -224,12 +238,7 @@ double * brent(double eps, int n) {
             f2 = f1;
             f1 = fu;
         } else {
-            if (u >= x1) {
-                b = u;
-            }
-            else {
-                a=u;
-            }
+            if(u >= x1) {b = u;}else{a=u;}
             if (fu <= f2 || x2 == x1) {
                 x3 = x2;
                 x2 = u;
@@ -242,8 +251,7 @@ double * brent(double eps, int n) {
         }
         res[i++] = u;
     }
-    res[0] = step;
-    res[1] = i - 2;
+    complete(res, i);
     return res;
 }
 

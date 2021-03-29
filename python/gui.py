@@ -18,11 +18,12 @@ use_agg("TkAgg")
 # PySimplGUI window
 layout = [
     [sg.Graph((640, 480), (0, 0), (640, 480), key="Graph")],
+    [sg.Text("Calc type")],
     [
         sg.Text("Accurance"),
-        sg.Input(key="accuracy"),
+        sg.Input(key="accuracy",default_text="0.0001"),
         sg.Text("Iter count"),
-        sg.Input(key="itercount"),
+        sg.Input(key="itercount",default_text="14"),
     ],
     [
         sg.Button("fibonacci"),
@@ -101,14 +102,13 @@ def draw_gif(ax, function, label=""):
     return animate, n
 
 
-x = np.linspace(-1, 20, 100).astype(float)
+x = np.linspace(0, 5, 100).astype(float)
 y = [func(i) for i in x]
 i = n = 0
 
 while True:
 
     event, values = window.read(timeout=200)
-    print(event, values)
     if event == sg.WINDOW_CLOSED:
         break
     if event in funcs:
@@ -116,7 +116,6 @@ while True:
         itercount = int(values["itercount"])
         f, n = draw_gif(ax, funcs[event](accuracy, itercount), event)
         i = 0
-
 
     # Reset ax
     ax.cla()

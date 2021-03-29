@@ -59,13 +59,13 @@ def plot_approximation(name, function, ax):
         # color=np.random.rand(
         #     3,
         # ),
-        linewidth=0.6,
+        linewidth=1,
         markersize=4,
         label=name
     )
 
-    ax.set_ylim(-10, 40)
-    ax.set_xlim(-2, 20)
+    ax.set_ylim(-10, 5)
+    ax.set_xlim(0, 5)
 
 
 fig = plt.figure(dpi=120)
