@@ -1,8 +1,6 @@
-#include <vector>
-#include <cmath>
 #include <iostream>
-#include <iomanip>
 #include <math.h>
+
 #define PI 3.14159265358979323846
 #define PHI 1.61803398874989484820
 #define TAU 0.61803398874989484820
@@ -20,7 +18,10 @@ double sign(double x) {
 }
 
 void complete(double *arr, int idx) {
-    idx = std::max(idx - 1, 0);
+    --idx;
+    if (idx < 0) {
+        idx = 0;
+    }
     for (int i = idx; i < 100; i++) {
         arr[i] = arr[idx];
     }
@@ -58,7 +59,7 @@ double * goldenRatio(double eps, int n) {
     double f1 = func(x1);
     double f2 = func(x2);
 
-    while (true) {
+    while (i < 100) {
         if (f1 > f2) {
             a = x1;
         } else {
@@ -112,7 +113,7 @@ double * fibonacci(double eps, int n2) {
     double f1 = func(x1);
     res[i++] = x1;
 
-    for (int k = 1; k < n; k++) {
+    for (int k = 1; k < n && i < 100; k++) {
         double x2 = a + (b - x1);
         double f2 = func(x2);
         res[i++] = x2;
@@ -134,9 +135,19 @@ double * fibonacci(double eps, int n2) {
     return res;
 }
 
+double * parabolaCoef(double x1, double x2, double x3, double y1, double y2, double y3) {
+    static double arr[3];
+    double D = (x1 - x2) * (x1 - x3) * (x2 - x3);
+    arr[0] = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / D;
+    arr[1] = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3)) / D;
+    arr[2] = (x2 * x3 * (x2 - x3) * y1 + x3 * x1 * (x3 - x1) * y2 + x1 * x2 * (x1 - x2) * y3) / D;
+    return arr;
+}
+
 double * parabola(double eps, int n) {
-    static double res[100];
+    static double res[400];
     int i = 0;
+    int j = 100;
     double x1 = 0;
     double x2;
     double x3 = 2 * PI;
@@ -153,12 +164,18 @@ double * parabola(double eps, int n) {
     double f2 = func(x2);
     double f3 = func(x3);
 
-    while (step > eps) {
+    while (step > eps && i < 100) {
         double a2 = (f2 - f1) / (x2 - x1);
         double a3 = (((f3 - f1) / (x3 - x1)) - a2) / (x3 - x2);
         x = 0.5 * (x1 + x2 - (a2 / a3));
         double f = func(x);
         step = abs(x - prev_x);
+
+        double *arr = parabolaCoef(x1, x2, x3, f1, f2, f3);
+        res[j++] = arr[0];
+        res[j++] = arr[1];
+        res[j++] = arr[2];
+
         if (x1 < x && x < x2 && f >= f2) {
             x1 = x;
             f1 = f;
@@ -176,11 +193,26 @@ double * parabola(double eps, int n) {
             x3 = x;
             f3 = f;
         }
+
         res[i++] = x;
         prev_x = x;
     }
     complete(res, i);
+
+    j -= 3;
+    if (j < 100) {
+        j = 100;
+    }
+    for (int k = j; k < 398;) {
+        res[k++] = res[j];
+        res[k++] = res[j + 1];
+        res[k++] = res[j + 2];
+    }
     return res;
+}
+
+double * parabola2(double eps, int n) {
+    return parabola(eps, n) + 100;
 }
 
 double getParabolaMin(double x1, double y1, double x2, double y2, double x3, double y3) {
@@ -202,7 +234,7 @@ double * brent(double eps, int n) {
     double step, prev_step;
     step = prev_step = b - a;
 
-    while (step > eps) {
+    while (step > eps && i < 100) {
         double prev2_step = prev_step;
         prev_step = step;
         double u;
@@ -226,7 +258,11 @@ double * brent(double eps, int n) {
 
         double fu = func(u);
         if (fu <= f1) {
-            (u >= x1 ? a : b) = x1;
+            if (u >= x1) {
+                a = x1;
+            } else {
+                b = x1;
+            }
             x3 = x2;
             x2 = x1;
             x1 = u;
@@ -234,7 +270,11 @@ double * brent(double eps, int n) {
             f2 = f1;
             f1 = fu;
         } else {
-            (u >= x1 ? b : a) = u;
+            if (u >= x1) {
+                b = u;
+            } else {
+                a = u;
+            }
             if (fu <= f2 || x2 == x1) {
                 x3 = x2;
                 x2 = u;
@@ -252,11 +292,15 @@ double * brent(double eps, int n) {
 }
 
 int main() {
-    std::cout << std::fixed;
-    std::cout << std::setprecision(10);
-    double *arr = fibonacci(0.0001, 30);
+    double *arr0 = parabola(0.000001, 0);
     for (int i = 0; i < 100; i++) {
-        std::cout << arr[i] << '\n';
+        printf("%lf %lf\n", arr0[i], func(arr0[i]));
+    }
+
+    printf("\n");
+    double *arr = parabola2(0.000001, 0);
+    for (int i = 0; i < 300; i += 3) {
+        printf("%lf * x^2 + %lf * x + %lf\n", arr[i], arr[i + 1], arr[i + 2]);
     }
     return 0;
 }
