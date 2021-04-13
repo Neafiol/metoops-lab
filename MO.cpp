@@ -194,9 +194,12 @@ result parabola(double x1, double x2, double x3, double eps) {
 }
 
 double getParabolaMin(double x1, double y1, double x2, double y2, double x3, double y3) {
-    double a = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2));
-    double b = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3));
-    return -b / (2 * a);
+    double z1 = x1 * (y3 - y2);
+    double z2 = x2 * (y1 - y3);
+    double z3 = x3 * (y2 - y1);
+    double a = z1 + z2 + z3;
+    double b = x1 * z1 + x2 * z2 + x3 * z3;
+    return b / (2 * a);
 }
 
 /**
@@ -228,9 +231,6 @@ result brent(double a, double b, double eps) {
         } else {
             step = x1 - a;
             u = x1 - (1 - TAU) * step;
-        }
-        if (abs(u - x1) < eps) {
-            u = x1 + sign(u - x1) * eps;
         }
 
         double fu = func(u);
