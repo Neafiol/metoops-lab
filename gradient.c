@@ -8,42 +8,64 @@ typedef struct vector {
     double x, y;
 } vector;
 
+typedef double (*function)(double, double);
+
 void printResult(vector* result);
-double func(double x, double y);
-double func0(vector v);
+double func1(double x, double y);
+double func2(double x, double y);
+double func3(double x, double y);
+double func4(double x, double y);
+double vectorFunc(vector v);
 vector findGradient(vector* v);
 vector nextValue(vector* v, vector* antiGrad, double lambda);
-vector gradientDescent(vector* v, double eps, int mode);
-double brent(double a, double b, double eps, vector* v, vector* antiGrad);
-double sign(double x);
 double lambdaFunc(vector* v, vector* antiGrad, double lambda);
+double norm2(vector* v);
+double norm(vector* v);
+double* gradientDescent(double eps, int mode, int funcIndex);
+vector gradientDescent1(vector v, double eps);
+vector gradientDescent2(vector current, double eps);
+double sign(double x);
 double getParabolaMin(double x1, double y1, double x2, double y2, double x3, double y3);
+double brent(double a, double b, double eps, vector* v, vector* antiGrad);
+
+function func = func1;
+function funcArr[] = {func1, func2, func3, func4};
 
 int main() {
     vector v;
-    double eps;
+    double eps = 1e-4;
     v.x = 10;
     v.y = -10;
-    eps = 1e-4;
-    vector result0 = gradientDescent(&v, eps, 0);
-    printResult(&result0);
-    vector result1 = gradientDescent(&v, eps, 1);
+    vector result1 = gradientDescent1(v, eps);
     printResult(&result1);
+    printf("\n");
+    vector result2 = gradientDescent2(v, eps);
+    printResult(&result2);
     return 0;
 }
 
 void printResult(vector* result) {
-    printf("x = %0.6f, y = %0.6f\n", result->x, result->y);
+    printf("x = %0.17f, y = %0.17f\n", result->x, result->y);
     fflush(stdout);
 }
 
-double func(double x, double y) {
-    // return x * x + y * y;
-    // return x * x - y * y;
+double func1(double x, double y) {
     return 64 * x * x + 126 * x * y + 64 * y * y - 10 * x + 30 * y + 13;
 }
 
-double func0(vector v) {
+double func2(double x, double y) {
+    return (x * x + y * y);
+}
+
+double func3(double x, double y) {
+    return x * x - y * y;
+}
+
+double func4(double x, double y) {
+    return 64 * x * x + 64 * y * y - 10 * x + 30 * y + 13;
+}
+
+double vectorFunc(vector v) {
     return func(v.x, v.y);
 }
 
@@ -64,36 +86,75 @@ vector nextValue(vector* v, vector* antiGrad, double lambda) {
     return w;
 }
 
-vector gradientDescent(vector* v, double eps, int mode) {
-    vector current = *v;
+double lambdaFunc(vector* v, vector* antiGrad, double lambda) {
+    return vectorFunc(nextValue(v, antiGrad, lambda));
+}
+
+double norm2(vector* v) {
+    return v->x * v->x + v->y * v->y;
+}
+
+double norm(vector* v) {
+    return sqrt(norm2(v));
+}
+
+double* gradientDescent(double eps, int mode, int funcIndex) {
+    static double data[100];
+    return data;
+}
+
+vector gradientDescent1(vector current, double eps) {
     vector last;
-    double currentValue = func0(current);
+    double currentValue = vectorFunc(current);
     double lastValue;
-    double difference;
-    do {
+    double lambda = 1;
+    for (int i = 0; i < 500; i++) {
+        vector antiGrad = findGradient(&current);
+        if (norm2(&antiGrad) < eps * eps) {
+            break;
+        }
+
         last = current;
         lastValue = currentValue;
-        vector antiGrad = findGradient(&current);
-        double lambda = 0.001;
-        switch (mode) {
-            case 0:
-                lambda = 0.001;
+
+        for (;;) {
+            current = nextValue(&last, &antiGrad, lambda / norm(&antiGrad));
+            currentValue = vectorFunc(current);
+            if (currentValue <= lastValue) {
                 break;
-            case 1:
-                lambda = brent(0.000001, 10, eps, v, &antiGrad);
-                break;
-            default:
-                break;
+            }
+            lambda *= 0.5;
         }
-        current = nextValue(&current, &antiGrad, lambda);
-        currentValue = func0(current);
-        difference = fabs(currentValue - lastValue);
-    } while (difference > eps);
+        if (current.x == last.x && current.y == last.y) {
+            break;
+        }
+        // printResult(&current);
+    };
     return current;
 }
 
-double lambdaFunc(vector* v, vector* antiGrad, double lambda) {
-    return func0(nextValue(v, antiGrad, lambda));
+vector gradientDescent2(vector current, double eps) {
+    vector last;
+    double currentValue = vectorFunc(current);
+    double lastValue;
+    for (int i = 0; i < 100; i++) {
+        vector antiGrad = findGradient(&current);
+        if (norm2(&antiGrad) < eps * eps) {
+            break;
+        }
+
+        last = current;
+        lastValue = currentValue;
+
+        double lambda = brent(-100, 100, eps, &current, &antiGrad);
+        current = nextValue(&current, &antiGrad, lambda);
+        currentValue = vectorFunc(current);
+        if (current.x == last.x && current.y == last.y) {
+            break;
+        }
+        // printResult(&current);
+    };
+    return current;
 }
 
 double sign(double x) {
