@@ -3,6 +3,7 @@
 
 #define PI 3.14159265358979323846
 #define TAU 0.61803398874989484820
+#define MAX_ITER 2000
 
 typedef struct vector {
     double x, y;
@@ -15,6 +16,7 @@ double func1(double x, double y);
 double func2(double x, double y);
 double func3(double x, double y);
 double func4(double x, double y);
+double func5(double x, double y);
 double vectorFunc(vector v);
 vector findGradient(vector* v);
 vector nextValue(vector* v, vector* antiGrad, double lambda);
@@ -29,18 +31,22 @@ double getParabolaMin(double x1, double y1, double x2, double y2, double x3, dou
 double brent(double a, double b, double eps, vector* v, vector* antiGrad);
 
 function func = func1;
-function funcArr[] = {func1, func2, func3, func4};
+function funcArr[] = {func1, func2, func3, func4, func5};
 
 int main() {
-    vector v;
-    double eps = 1e-4;
-    v.x = 10;
-    v.y = -10;
+    vector v = {.x = 0, .y = 0};
+    double eps = 1e-6;
+
     vector result1 = gradientDescent1(v, eps);
     printResult(&result1);
     printf("\n");
+
     vector result2 = gradientDescent2(v, eps);
     printResult(&result2);
+    printf("\n");
+
+    double* res = gradientDescent(eps, 1, 1);
+    printf("x = %0.17f, y = %0.17f\n", res[0], res[1]);
     return 0;
 }
 
@@ -54,7 +60,7 @@ double func1(double x, double y) {
 }
 
 double func2(double x, double y) {
-    return (x * x + y * y);
+    return x * x + y * y;
 }
 
 double func3(double x, double y) {
@@ -62,7 +68,11 @@ double func3(double x, double y) {
 }
 
 double func4(double x, double y) {
-    return 64 * x * x + 64 * y * y - 10 * x + 30 * y + 13;
+    return 1e8 * func1(x, y);
+}
+
+double func5(double x, double y) {
+    return 1e-8 * func1(x, y);
 }
 
 double vectorFunc(vector v) {
@@ -100,6 +110,19 @@ double norm(vector* v) {
 
 double* gradientDescent(double eps, int mode, int funcIndex) {
     static double data[100];
+    vector init = {.x = 0, .y = 0};
+    vector res;
+    func = funcArr[funcIndex - 1];
+    switch (mode) {
+        case 1:
+            res = gradientDescent1(init, eps);
+            break;
+        case 2:
+            res = gradientDescent2(init, eps);
+            break;
+    }
+    data[0] = res.x;
+    data[1] = res.y;
     return data;
 }
 
@@ -108,7 +131,7 @@ vector gradientDescent1(vector current, double eps) {
     double currentValue = vectorFunc(current);
     double lastValue;
     double lambda = 1;
-    for (int i = 0; i < 500; i++) {
+    for (int i = 0; i < MAX_ITER; i++) {
         vector antiGrad = findGradient(&current);
         if (norm2(&antiGrad) < eps * eps) {
             break;
@@ -125,19 +148,18 @@ vector gradientDescent1(vector current, double eps) {
             }
             lambda *= 0.5;
         }
-        if (current.x == last.x && current.y == last.y) {
-            break;
-        }
         // printResult(&current);
     };
     return current;
 }
 
 vector gradientDescent2(vector current, double eps) {
+    double lambdaMin = 0.001;
+    double lambdaMax = 1000;
     vector last;
     double currentValue = vectorFunc(current);
     double lastValue;
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < MAX_ITER; i++) {
         vector antiGrad = findGradient(&current);
         if (norm2(&antiGrad) < eps * eps) {
             break;
@@ -146,12 +168,22 @@ vector gradientDescent2(vector current, double eps) {
         last = current;
         lastValue = currentValue;
 
-        double lambda = brent(-100, 100, eps, &current, &antiGrad);
+        double invNorm = 1 / norm(&antiGrad);
+        antiGrad.x *= invNorm;
+        antiGrad.y *= invNorm;
+
+        double lambda = brent(lambdaMin, lambdaMax, eps, &current, &antiGrad);
+
+        if (lambda < 10 * lambdaMin) {
+            lambdaMin *= 0.1;
+            lambdaMax *= 0.1;
+        } else if (lambdaMax < 10 * lambda) {
+            lambdaMin *= 10;
+            lambdaMax *= 10;
+        }
+
         current = nextValue(&current, &antiGrad, lambda);
         currentValue = vectorFunc(current);
-        if (current.x == last.x && current.y == last.y) {
-            break;
-        }
         // printResult(&current);
     };
     return current;
