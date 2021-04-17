@@ -1,138 +1,214 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
 #define PI 3.14159265358979323846
 #define TAU 0.61803398874989484820
 #define MAX_ITER 2000
+#define MAX_VECTOR_SIZE 1000
 
-typedef struct vector {
-    double x, y;
-} vector;
+struct vector;
+struct function2d;
+struct functionNd;
+struct baseFunction;
 
-typedef double (*function)(double, double);
+typedef struct vector vector;
+typedef struct function2d function2d;
+typedef struct functionNd functionNd;
+typedef struct baseFunction baseFunction;
 
-void printResult(vector* result);
-double func1(double x, double y);
-double func2(double x, double y);
-double func3(double x, double y);
-double func4(double x, double y);
-double func5(double x, double y);
-double vectorFunc(vector v);
-vector findGradient(vector* v);
+struct vector {
+    int size;
+    double data[MAX_VECTOR_SIZE];
+};
+
+typedef enum classType {_2d, Nd} classType;
+
+struct baseFunction {
+    classType type;
+};
+
+vector getVector2d(double x, double y);
+vector getVectorNd(double* data, int size);
+function2d getFunction2d(double xx, double xy, double yy, double x, double y, double c);
+functionNd getFunctionNd(vector *v);
+
+struct functionNd {
+    baseFunction base;
+    vector H;
+};
+
+double calcNd(functionNd* f, vector* v) {
+    double res = 0;
+    for (int i = 0; i < f->H.size; i++) {
+        res += f->H.data[i] * v->data[i] * v->data[i];
+    }
+    return res;
+}
+
+double diffNd(functionNd* f, int i, double x, double dx) {
+    double xh = x + dx;
+    return f->H.data[i] * (xh * xh - x * x);
+}
+
+vector gradNd(functionNd* f, vector* v, double value0) {
+    const double h = 0.01;
+    const double invh = 1 / h;
+    vector grad = getVector2d(0, 0);
+    for (int i = 0; i < f->H.size; i++) {
+        grad.data[i] = diffNd(f, i, v->data[i], h) * invh - f->H.data[i] * h;
+    }
+    return grad;
+}
+
+struct function2d {
+    baseFunction base;
+    const double xx, xy, yy, x, y, c;
+};
+
+double calc2d0(function2d* f, double x, double y) {
+    return f->xx * x * x + f->xy * x * y + f->yy * y * y + f->x * x + f->y * y + f->c;
+}
+
+double calc2d(function2d* f, vector* v) {
+    return calc2d0(f, v->data[0], v->data[1]);
+}
+
+vector grad2d0(function2d* f, double x0, double y0, double value0) {
+    const double h = 0.01;
+    const double invh = 1 / h;
+    double dx = (calc2d0(f, x0 + h, y0) - value0) * invh - f->xx * h;
+    double dy = (calc2d0(f, x0, y0 + h) - value0) * invh - f->yy * h;
+    return getVector2d(dx, dy);
+}
+
+vector grad2d(function2d* f, vector* v, double value0) {
+    return grad2d0(f, v->data[0], v->data[1], value0);
+}
+
+double calc(baseFunction* f, vector* v);
+vector findGradient(baseFunction* f, vector* v, double value0);
 vector nextValue(vector* v, vector* antiGrad, double lambda);
-double lambdaFunc(vector* v, vector* antiGrad, double lambda);
+double lambdaFunc(baseFunction* func, vector* v, vector* antiGrad, double lambda);
 double norm2(vector* v);
 double norm(vector* v);
-double* gradientDescent(double eps, int mode, int funcIndex);
-vector gradientDescent1(vector v, double eps);
-vector gradientDescent2(vector current, double eps);
+void normalize(vector* v);
+vector gradientDescent1(vector current, double eps, baseFunction* func);
+vector gradientDescent2(vector current, double eps, baseFunction* func);
 double sign(double x);
 double getParabolaMin(double x1, double y1, double x2, double y2, double x3, double y3);
-double brent(double a, double b, double eps, vector* v, vector* antiGrad);
+double brent(double a, double b, double eps, vector* v, vector* antiGrad, baseFunction* func);
 
-function func = func1;
-function funcArr[] = {func1, func2, func3, func4, func5};
+void printResult(vector* result);
+double* gradientDescent(double eps, int mode, int funcIndex);
+
+static function2d func2dArr[2] = {
+    {_2d, 64, 126, 64, -10, 30, 13}, // 64x^2 + 126xy + 64y^2 - 10x + 30y + 13
+    {_2d, 1, 0, 1, 0, 0, 0}, // x^2 + y^2
+};
 
 int main() {
-    vector v = {.x = 0, .y = 0};
-    double eps = 1e-6;
+    baseFunction* func2d = (baseFunction*) (&func2dArr[0]);
+    vector init2d = getVector2d(0, 0);
+    double eps = 1e-8;
 
-    vector result1 = gradientDescent1(v, eps);
+    vector result1 = gradientDescent1(init2d, eps, func2d);
     printResult(&result1);
     printf("\n");
 
-    vector result2 = gradientDescent2(v, eps);
+    vector result2 = gradientDescent2(init2d, eps, func2d);
     printResult(&result2);
     printf("\n");
 
     double* res = gradientDescent(eps, 1, 1);
-    printf("x = %0.17f, y = %0.17f\n", res[0], res[1]);
+    printf("x0 = %0.17f, x1 = %0.17f\n", res[0], res[1]);
+    printf("\n");
+
+    double funcData[] = {1, 2, 5}; // x^2 + 2y^2 + 5z^2
+    vector vecFunc = getVectorNd(funcData, 3);
+    functionNd funcNd0 = getFunctionNd(&vecFunc);
+    baseFunction* funcNd = (baseFunction*) (&funcNd0);
+    double initData[] = {0, 0, 0};
+    vector initNd = getVectorNd(initData, 3);
+
+    vector result3 = gradientDescent1(initNd, eps, funcNd);
+    printResult(&result3);
+    printf("\n");
+
     return 0;
 }
 
 void printResult(vector* result) {
-    printf("x = %0.17f, y = %0.17f\n", result->x, result->y);
+    for (int i = 0; i < result->size; i++) {
+        printf("x%d = %0.17f", i, result->data[i]);
+        if (i < result->size - 1) {
+            printf(", ");
+        } else {
+            printf("\n");
+        }
+    }
     fflush(stdout);
 }
 
-double func1(double x, double y) {
-    return 64 * x * x + 126 * x * y + 64 * y * y - 10 * x + 30 * y + 13;
-}
-
-double func2(double x, double y) {
-    return x * x + y * y;
-}
-
-double func3(double x, double y) {
-    return x * x - y * y;
-}
-
-double func4(double x, double y) {
-    return 1e8 * func1(x, y);
-}
-
-double func5(double x, double y) {
-    return 1e-8 * func1(x, y);
-}
-
-double vectorFunc(vector v) {
-    return func(v.x, v.y);
-}
-
-vector findGradient(vector* v) {
-    vector grad;
-    double h = 0.1;
-    double dx = (func(v->x + h, v->y) - func(v->x - h, v->y)) / (2 * h);
-    double dy = (func(v->x, v->y + h) - func(v->x, v->y - h)) / (2 * h);
-    grad.x = dx;
-    grad.y = dy;
-    return grad;
-}
-
 vector nextValue(vector* v, vector* antiGrad, double lambda) {
-    vector w;
-    w.x = v->x - lambda * antiGrad->x;
-    w.y = v->y - lambda * antiGrad->y;
+    vector w = getVector2d(0, 0);
+    for (int i = 0; i < v->size; i++) {
+        w.data[i] = v->data[i] - lambda * antiGrad->data[i];
+    }
     return w;
 }
 
-double lambdaFunc(vector* v, vector* antiGrad, double lambda) {
-    return vectorFunc(nextValue(v, antiGrad, lambda));
+double lambdaFunc(baseFunction* f, vector* v, vector* antiGrad, double lambda) {
+    vector val = nextValue(v, antiGrad, lambda);
+    return calc(f, &val);
 }
 
 double norm2(vector* v) {
-    return v->x * v->x + v->y * v->y;
+    double res = 0;
+    for (int i = 0; i < v->size; i++) {
+        res += v->data[i] * v->data[i];
+    }
+    return res;
 }
 
 double norm(vector* v) {
     return sqrt(norm2(v));
 }
 
+void normalize(vector* v) {
+    double invNorm = 1 / norm(v);
+    for (int i = 0; i < v->size; i++) {
+        v->data[i] *= invNorm;
+    }
+}
+
 double* gradientDescent(double eps, int mode, int funcIndex) {
     static double data[100];
-    vector init = {.x = 0, .y = 0};
+    baseFunction* func = (baseFunction*)(&func2dArr[funcIndex - 1]);
+    vector init = getVector2d(0, 0);
     vector res;
-    func = funcArr[funcIndex - 1];
     switch (mode) {
         case 1:
-            res = gradientDescent1(init, eps);
+            res = gradientDescent1(init, eps, func);
             break;
         case 2:
-            res = gradientDescent2(init, eps);
+            res = gradientDescent2(init, eps, func);
             break;
+        default:
+            exit(1);
     }
-    data[0] = res.x;
-    data[1] = res.y;
+    data[0] = res.data[0];
+    data[1] = res.data[1];
     return data;
 }
 
-vector gradientDescent1(vector current, double eps) {
-    vector last;
-    double currentValue = vectorFunc(current);
+vector gradientDescent1(vector current, double eps, baseFunction* func) {
+    vector last = getVector2d(0, 0);
+    double currentValue = calc(func, &current);
     double lastValue;
     double lambda = 1;
     for (int i = 0; i < MAX_ITER; i++) {
-        vector antiGrad = findGradient(&current);
+        vector antiGrad = findGradient(func, &current, currentValue);
         if (norm2(&antiGrad) < eps * eps) {
             break;
         }
@@ -142,7 +218,7 @@ vector gradientDescent1(vector current, double eps) {
 
         for (;;) {
             current = nextValue(&last, &antiGrad, lambda / norm(&antiGrad));
-            currentValue = vectorFunc(current);
+            currentValue = calc(func, &current);
             if (currentValue <= lastValue) {
                 break;
             }
@@ -153,14 +229,14 @@ vector gradientDescent1(vector current, double eps) {
     return current;
 }
 
-vector gradientDescent2(vector current, double eps) {
-    double lambdaMin = 0.001;
-    double lambdaMax = 1000;
-    vector last;
-    double currentValue = vectorFunc(current);
+vector gradientDescent2(vector current, double eps, baseFunction* func) {
+    double lambdaMin = 0;
+    double lambdaMax = 1e9;
+    vector last = getVector2d(0, 0);
+    double currentValue = calc(func, &current);
     double lastValue;
     for (int i = 0; i < MAX_ITER; i++) {
-        vector antiGrad = findGradient(&current);
+        vector antiGrad = findGradient(func, &current, currentValue);
         if (norm2(&antiGrad) < eps * eps) {
             break;
         }
@@ -168,22 +244,10 @@ vector gradientDescent2(vector current, double eps) {
         last = current;
         lastValue = currentValue;
 
-        double invNorm = 1 / norm(&antiGrad);
-        antiGrad.x *= invNorm;
-        antiGrad.y *= invNorm;
-
-        double lambda = brent(lambdaMin, lambdaMax, eps, &current, &antiGrad);
-
-        if (lambda < 10 * lambdaMin) {
-            lambdaMin *= 0.1;
-            lambdaMax *= 0.1;
-        } else if (lambdaMax < 10 * lambda) {
-            lambdaMin *= 10;
-            lambdaMax *= 10;
-        }
-
+        normalize(&antiGrad);
+        double lambda = brent(lambdaMin, lambdaMax, eps, &current, &antiGrad, func);
         current = nextValue(&current, &antiGrad, lambda);
-        currentValue = vectorFunc(current);
+        currentValue = calc(func, &current);
         // printResult(&current);
     };
     return current;
@@ -202,11 +266,11 @@ double getParabolaMin(double x1, double y1, double x2, double y2, double x3, dou
     return b / (2 * a);
 }
 
-double brent(double a, double b, double eps, vector* v, vector* antiGrad) {
+double brent(double a, double b, double eps, vector* v, vector* antiGrad, baseFunction* func) {
     double x1, x2, x3;
     double f1, f2, f3;
     x1 = x2 = x3 = (a + b) / 2;
-    f1 = f2 = f3 = lambdaFunc(v, antiGrad, x1);
+    f1 = f2 = f3 = lambdaFunc(func, v, antiGrad, x1);
     double step, prev_step;
     step = prev_step = b - a;
 
@@ -231,7 +295,7 @@ double brent(double a, double b, double eps, vector* v, vector* antiGrad) {
             u = x1 - (1 - TAU) * step;
         }
 
-        double fu = lambdaFunc(v, antiGrad, u);
+        double fu = lambdaFunc(func, v, antiGrad, u);
         if (fu <= f1) {
             if (u >= x1) a = x1;
             else b = x1;
@@ -258,4 +322,47 @@ double brent(double a, double b, double eps, vector* v, vector* antiGrad) {
         }
     }
     return x1;
+}
+
+vector findGradient(baseFunction* f, vector* v, double value0) {
+    switch (f->type) {
+        case _2d: return grad2d((function2d*) f, v, value0);
+        case Nd: return gradNd((functionNd*) f, v, value0);
+        default: exit(1);
+    }
+}
+
+double calc(baseFunction* f, vector* v) {
+    switch (f->type) {
+        case _2d: return calc2d((function2d*) f, v);
+        case Nd: return calcNd((functionNd*) f, v);
+        default: exit(1);
+    }
+}
+
+vector getVector2d(double x, double y) {
+    vector v;
+    v.size = 2;
+    v.data[0] = x;
+    v.data[1] = y;
+    return v;
+}
+
+vector getVectorNd(double* data, int size) {
+    vector v;
+    v.size = size;
+    for (int i = 0; i < size; i++) {
+        v.data[i] = data[i];
+    }
+    return v;
+}
+
+function2d getFunction2d(double xx, double xy, double yy, double x, double y, double c) {
+    function2d f = {_2d, xx, xy, yy, x, y, c};
+    return f;
+}
+
+functionNd getFunctionNd(vector *v) {
+    functionNd f = {Nd, *v};
+    return f;
 }
