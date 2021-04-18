@@ -1,4 +1,4 @@
-#include <iostream>
+#include <stdio.h>
 #include <math.h>
 
 #define PI 3.14159265358979323846
@@ -293,14 +293,14 @@ double * brent(double eps, int n) {
 
 int main() {
     double *arr0 = parabola(0.000001, 0);
-    for (int i = 0; i < 100; i++) {
-        printf("%lf %lf\n", arr0[i], func(arr0[i]));
+    for (int i = 80; i < 100; i++) {
+        printf("%f %f\n", arr0[i], func(arr0[i]));
     }
 
     printf("\n");
     double *arr = parabola2(0.000001, 0);
     for (int i = 0; i < 300; i += 3) {
-        printf("%lf * x^2 + %lf * x + %lf\n", arr[i], arr[i + 1], arr[i + 2]);
+        printf("%f * x^2 + %f * x + %f\n", arr[i], arr[i + 1], arr[i + 2]);
     }
     return 0;
 }
