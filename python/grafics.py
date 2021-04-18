@@ -34,6 +34,27 @@ for f in funcs.values():
     setup_func(f)
 
 
+funcs["brent"] = lambda x, y: [
+    1.9416110387,
+    2.6832404626,
+    2.6748775538,
+    2.7049649062,
+    2.7065441481,
+]
+
+funcs["parabola"] = lambda x, y: [
+    1.4547019649,
+    2.1841521557,
+    2.7244983330,
+    2.7796564819,
+    2.7017345244,
+    2.7057326514,
+    2.7064678701,
+    2.7064744899,
+]
+
+
+
 def plot_approximation(name, function, ax):
 
     ax.set_title(name)
@@ -43,10 +64,12 @@ def plot_approximation(name, function, ax):
 
     ax.plot(x, y, c="r")
 
-    r = function(0.0001, 14)
-    dots_x = np.ctypeslib.as_array(
-        (ctypes.c_double * 100).from_address(ctypes.addressof(r.contents))
-    )
+    if isinstance(function(0.0001, 14), list):
+        dots_x = function(0.0001, 14)
+    else:
+        dots_x = np.ctypeslib.as_array(
+            (ctypes.c_double * 100).from_address(ctypes.addressof(function(0.0001, 14).contents))
+        )
 
     dots_y = []
     for d in dots_x:

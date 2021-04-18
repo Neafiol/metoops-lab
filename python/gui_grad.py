@@ -26,8 +26,8 @@ layout = [
         sg.Input(key="itercount", default_text="14"),
     ],
     [
-        sg.Button("fibonacci"),
-        sg.Button("bisection"),
+        sg.Button("gradient descent method"),
+        sg.Button("steepest descent method"),
         sg.Button("parabola"),
         sg.Button("goldenRatio"),
         sg.Button("brent"),
@@ -63,23 +63,20 @@ funcs = {
     "goldenRatio": lib.goldenRatio,
     "parabola": lib.parabola,
     "brent": lib.brent,
-    "parabola2": lib.parabola2,
 }
 for f in funcs.values():
     setup_func(f)
 
 
-function = funcs["parabola2"](0.000001, 0)
-dots = np.ctypeslib.as_array(
-    (ctypes.c_double * 400).from_address(ctypes.addressof(function.contents))
-)
-
-
-def draw_gif(ax, function, label="", parabols=None):
-    dots = np.ctypeslib.as_array(
-        (ctypes.c_double * 100).from_address(ctypes.addressof(function.contents))
-    )
+def draw_gif(ax, function, label=""):
+    if isinstance(function,list):
+        dots = function
+    else:
+        dots = np.ctypeslib.as_array(
+            (ctypes.c_double * 100).from_address(ctypes.addressof(function.contents))
+        )
     n = 0
+    print(dots)
 
     dots_y = []
     dots_x = []
@@ -95,7 +92,6 @@ def draw_gif(ax, function, label="", parabols=None):
     ax.plot(
         dots_x[:1], dots_y[:1], "*-", linewidth=0.6, markersize=4, label="opt", c="r"
     )
-
     ax.legend()
 
     def animate(i):
@@ -108,14 +104,6 @@ def draw_gif(ax, function, label="", parabols=None):
             label="opt",
             c="r",
         )
-        if parabols is not None:
-            a, b, c = parabols[i]
-            fparabol = lambda x: a * (x ** 2) + b * x + c
-
-            px = np.linspace(0, 5, 100).astype(float)
-            py = [fparabol(i) for i in x]
-
-            ax.plot(px, py, c="y")
 
     return animate, n
 
@@ -126,25 +114,14 @@ i = n = 0
 
 while True:
 
-    event, values = window.read(timeout=500)
+    event, values = window.read(timeout=200)
     if event == sg.WINDOW_CLOSED:
         break
 
     if event in funcs:
         accuracy = float(values["accuracy"])
         itercount = int(values["itercount"])
-        if event == "parabola":
-            function = funcs["parabola2"](accuracy, itercount)
-            dots = np.ctypeslib.as_array(
-                (ctypes.c_double * 300).from_address(
-                    ctypes.addressof(function.contents)
-                )
-            )
-            parabols = dots.reshape((-1, 3))
-        else:
-            parabols = None
-
-        f, n = draw_gif(ax, funcs[event](accuracy, itercount), event, parabols)
+        f, n = draw_gif(ax, funcs[event](accuracy, itercount), event)
         i = 0
 
     # Reset ax
