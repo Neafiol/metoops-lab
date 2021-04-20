@@ -293,7 +293,7 @@ double * brent(double eps, int n) {
 
 int main() {
     double *arr0 = parabola(0.000001, 0);
-    for (int i = 80; i < 100; i++) {
+    for (int i = 0; i < 100; i++) {
         printf("%f %f\n", arr0[i], func(arr0[i]));
     }
 
