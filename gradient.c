@@ -227,19 +227,21 @@ void test3() {
 }
 
 int getRand(int from, int to) {
-    return rand() % (to - from) + from;
+    return rand() % (to - from + 1) + from;
 }
 
 void test4(int n, int k) {
     srand(3);
     double eps = 1e-16;
+    int base = 16;
 
     functionNd f = {Nd, n};
     for (int i = 0; i < n; i++) {
-        f.H[i] = getRand(16, 16 * k);
-        f.b[i] = getRand(-8 * (n + k), 8 * (n + k));
+        f.H[i] = getRand(base, base * k);
+        f.b[i] = getRand(-base * (n + k), base * (n + k));
     }
-    f.H[n - 1] = f.H[0] * k;
+    f.H[0] = base;
+    f.H[1] = base * k;
 
     if (n <= 26) {
         printFunctionNd(&f);
