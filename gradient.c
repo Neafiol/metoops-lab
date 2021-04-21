@@ -226,14 +226,18 @@ void test3() {
     printf("\n");
 }
 
+int getRand(int from, int to) {
+    return rand() % (to - from) + from;
+}
+
 void test4(int n, int k) {
+    srand(3);
     double eps = 1e-16;
 
     functionNd f = {Nd, n};
-    srand(3);
     for (int i = 0; i < n; i++) {
-        f.H[i] = rand() % (16 * k) + 1;
-        f.b[i] = rand() % (16 * n) - 8 * n;
+        f.H[i] = getRand(16, 16 * k);
+        f.b[i] = getRand(-8 * (n + k), 8 * (n + k));
     }
     f.H[n - 1] = f.H[0] * k;
 
