@@ -164,7 +164,9 @@ double getParabolaMin(double x1, double y1, double x2, double y2, double x3, dou
 double brent(double a, double b, double eps, vector* v, vector* grad, baseFunction* func);
 
 void printVector(vector* result);
-double* gradientDescent(double eps, int mode, int funcIndex);
+double* gradientDescent(double eps, int method, int funcIndex); // for ui
+
+double trace[2 * MAX_ITER]; // for ui
 
 function2d func2dArr[] = {
     {_2d, 64, 126, 64, -10, 30, 13}, // 64x^2 + 126xy + 64y^2 - 10x + 30y + 13
@@ -185,8 +187,8 @@ gradientFunc gradientArr[] = {
     gradientDescent3
 };
 
-void test1() {
-    function2d f = func2dArr[2];
+void test1(int funcId) {
+    function2d f = func2dArr[funcId];
     baseFunction* func = (baseFunction*) (&f);
     vector init = {2, 0, 0};
     double eps = 1e-16;
@@ -202,8 +204,8 @@ void test1() {
     }
 }
 
-void test2() {
-    functionNd f = funcNdArr[0];
+void test2(int funcId) {
+    functionNd f = funcNdArr[funcId];
     baseFunction* func = (baseFunction*) (&f);
     vector init = getZeroVector(f.size);
     double eps = 1e-16;
@@ -219,10 +221,18 @@ void test2() {
     }
 }
 
-void test3() {
-    printf("result1/1\n");
-    double* res = gradientDescent(1e-16, 1, 1);
-    printf("x0 = %0.17f, x1 = %0.17f\n", res[0], res[1]);
+// for ui
+void test3(int methodId, int funcId) {
+    double* res = gradientDescent(1e-16, methodId + 1, funcId + 1);
+    printf("trace\n");
+    for (int i = 0; i < MAX_ITER; ++i) {
+        double x = res[2 * i];
+        double y = res[2 * i + 1];
+        if (x == 0 && y == 0) {
+            break;
+        }
+        printf("x = %0.17f, y = %0.17f\n", x, y);
+    }
     printf("\n");
 }
 
@@ -258,10 +268,10 @@ void test4(int n, int k) {
 }
 
 int main() {
-    test1();
-    test2();
-    // test3();
-    test4(3, 2);
+    // test1(1);
+    // test2(0);
+    test3(0, 0);
+    // test4(3, 2);
 }
 
 void printVector(vector* result) {
@@ -309,27 +319,21 @@ void normalize(vector* v) {
     }
 }
 
-double* gradientDescent(double eps, int mode, int funcIndex) {
-    static double data[100];
-    baseFunction* func = (baseFunction*) (&func2dArr[funcIndex - 1]);
-    vector init = {2, 0, 0};
-    vector res;
-    switch (mode) {
-        case 1:
-            res = gradientDescent1(init, eps, func);
-            break;
-        case 2:
-            res = gradientDescent2(init, eps, func);
-            break;
-        case 3:
-            res = gradientDescent3(init, eps, func);
-            break;
-        default:
-            exit(1);
+// for ui
+void clearTrace() {
+    for (int i = 0; i < 2 * MAX_ITER; i++) {
+        trace[i] = 0;
     }
-    data[0] = res.data[0];
-    data[1] = res.data[1];
-    return data;
+}
+
+// for ui
+double* gradientDescent(double eps, int methodId, int funcId) {
+    clearTrace();
+    baseFunction* func = (baseFunction*) (&func2dArr[funcId - 1]);
+    gradientFunc method = gradientArr[methodId - 1];
+    vector init = {2, 1, 1};
+    method(init, eps, func);
+    return trace;
 }
 
 vector gradientDescent1(vector current, double eps, baseFunction* func) {
@@ -338,6 +342,9 @@ vector gradientDescent1(vector current, double eps, baseFunction* func) {
     double lastValue;
     double lambda = 1;
     for (int i = 0; i < MAX_ITER; i++) {
+        trace[2 * i] = current.data[0]; // for ui
+        trace[2 * i + 1] = current.data[1]; // for ui
+
         vector grad = findGradient(func, &current);
         if (norm2(&grad) < eps * eps) {
             break;
@@ -346,10 +353,10 @@ vector gradientDescent1(vector current, double eps, baseFunction* func) {
         last = current;
         lastValue = currentValue;
 
-        for (;;) {
+        for (int j = 0; j < 32; j++) {
             current = nextValue(&last, &grad, lambda / norm(&grad));
             currentValue = calc(func, &current);
-            if (currentValue <= lastValue) {
+            if (currentValue < lastValue) {
                 break;
             }
             lambda *= 0.5;
@@ -364,6 +371,9 @@ vector gradientDescent2(vector current, double eps, baseFunction* func) {
     double lambdaMax = 1e9;
     vector last;
     for (int i = 0; i < MAX_ITER; i++) {
+        trace[2 * i] = current.data[0]; // for ui
+        trace[2 * i + 1] = current.data[1]; // for ui
+
         vector grad = findGradient(func, &current);
         if (norm2(&grad) < eps * eps) {
             break;
@@ -380,6 +390,9 @@ vector gradientDescent2(vector current, double eps, baseFunction* func) {
 }
 
 vector gradientDescent3(vector x, double eps, baseFunction* func) {
+    trace[0] = x.data[0]; // for ui
+    trace[1] = x.data[1]; // for ui
+
     vector grad = findGradient(func, &x); // grad = Hf
     double gradNorm2 = norm2(&grad); // gradNorm2 = ||Hf||^2
     vector p = grad;
@@ -400,6 +413,9 @@ vector gradientDescent3(vector x, double eps, baseFunction* func) {
         mulByScalar(&p, b); // p = b*p'
         subFromVector(&p, &grad); // p = -Hf1 + b*p'
         gradNorm2 = grad1Norm2;
+
+        trace[2 * i] = x.data[0]; // for ui
+        trace[2 * i + 1] = x.data[1]; // for ui
     }
     return x;
 }
