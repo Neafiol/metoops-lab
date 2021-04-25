@@ -167,6 +167,7 @@ void printVector(vector* result);
 double* gradientDescent(double eps, int method, int funcIndex); // for ui
 
 double trace[2 * MAX_ITER]; // for ui
+int iterCount;
 
 function2d func2dArr[] = {
     {_2d, 64, 126, 64, -10, 30, 13}, // 64x^2 + 126xy + 64y^2 - 10x + 30y + 13
@@ -241,7 +242,6 @@ int getRand(int from, int to) {
 }
 
 void test4(int n, int k) {
-    srand(3);
     double eps = 1e-16;
     int base = 16;
 
@@ -254,24 +254,45 @@ void test4(int n, int k) {
     f.H[1] = base * k;
 
     if (n <= 26) {
-        printFunctionNd(&f);
-        printf("\n");
+        // printFunctionNd(&f);
+        // printf("\n");
     }
 
     baseFunction* func = (baseFunction*) (&f);
     vector init = getZeroVector(n);
 
-    printf("result\n");
+    // printf("result\n");
     vector result = gradientDescent3(init, eps, func);
-    printVector(&result);
+    // printf("count of iterations: %d\n", iterCount);
+    // printVector(&result);
+    // printf("\n");
+}
+
+void printTable(int n, int k, int nStep, int kStep) {
+    for (int i = 2; i <= n; i += nStep) {
+        for (int j = 2; j <= k; j += kStep) {
+            int cnt = 10;
+            int iterCnt = 0;
+            for (int t = 0; t < cnt; t++) {
+                test4(i, j);
+                iterCnt += iterCount;
+            }
+            iterCnt /= cnt;
+            printf("%-4d ", iterCnt);
+        }
+        printf("\n");
+        fflush(stdout);
+    }
     printf("\n");
 }
 
 int main() {
+    srand(3);
     // test1(1);
     // test2(0);
-    test3(0, 0);
-    // test4(3, 2);
+    // test3(0, 0);
+    // test4(900, 300);
+    printTable(200, 200, 10, 10);
 }
 
 void printVector(vector* result) {
@@ -398,7 +419,7 @@ vector gradientDescent3(vector x, double eps, baseFunction* func) {
     vector p = grad;
     mulByScalar(&p, -1); // p = -Hf
 
-    for (int i = 1; i <= x.size && gradNorm2 > eps * eps ; i++) {
+    for (int i = 1; i <= x.size && gradNorm2 > eps * eps; i++) {
         vector Ap = applyOperator(func, &p); // Ap = A*p
         double Ap_p = dotProduct(&Ap, &p); // Ap_p = (A*p, p)
         double a = gradNorm2 / Ap_p; // a = ||Hf||^2 / (A*p, p)
@@ -416,6 +437,7 @@ vector gradientDescent3(vector x, double eps, baseFunction* func) {
 
         trace[2 * i] = x.data[0]; // for ui
         trace[2 * i + 1] = x.data[1]; // for ui
+        iterCount = i;
     }
     return x;
 }
