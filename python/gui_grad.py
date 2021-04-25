@@ -15,22 +15,45 @@ from numpy.ctypeslib import ndpointer
 # Use Tkinter Agg
 use_agg("TkAgg")
 
-# PySimplGUI window
+functions = {
+    "64x^2 + 126xy + 64y^2 - 10x + 30y + 13": {
+        "func": lambda x, y: 64 * x * x
+        + 126 * x * y
+        + 64 * y ** 2
+        - 10 * x
+        + 30 * y
+        + 13,
+        "c_func_num": 1,
+    },
+    "x^2 + y^2 - 2x + 5y": {
+        "func": lambda x, y: x * x + y * y - 2 * x + 5 * y,
+        "c_func_num": 2,
+    },
+    "25x^2 - 6xy + y^2 - 20x + 300y + 1": {
+        "func": lambda x, y: 25 * x * x - 6 * x * y + y * y - 20 * x + 300 * y + 1,
+        "c_func_num": 3,
+    },
+}
+
+
 layout = [
     [sg.Graph((640, 480), (0, 0), (640, 480), key="Graph")],
-    [sg.Text("Calc type")],
     [
+        sg.Listbox(
+            list(functions.keys()),
+            key="func",
+            select_mode=sg.LISTBOX_SELECT_MODE_SINGLE,
+            default_values=[list(functions.keys())[0]],
+            size=(35, 3),
+            bind_return_key=True,
+            auto_size_text=True,
+            enable_events=True,
+        ),
+        sg.Button("metod 1"),
+        sg.Button("metod 2"),
+        sg.Button("metod 3"),
         sg.Text("Accurance"),
-        sg.Input(key="accuracy", default_text="0.0001"),
-        sg.Text("Iter count"),
-        sg.Input(key="itercount", default_text="14"),
-    ],
-    [
-        sg.Button("gradient descent method"),
-        sg.Button("steepest descent method"),
-        sg.Button("parabola"),
-        sg.Button("goldenRatio"),
-        sg.Button("brent"),
+        sg.Input(key="accuracy", default_text="0.0001", size=(10, 1)),
     ],
 ]
 
@@ -40,61 +63,50 @@ canvas = FigureCanvasTkAgg(fig, window["Graph"].Widget)
 plot_widget = canvas.get_tk_widget()
 plot_widget.grid(row=0, column=0)
 
-so_file = "lib/mo.co"
 
-lib = CDLL(so_file)
+lib = CDLL("lib/mog.co")
+get_gradient_trek = lib.gradientDescent
+get_gradient_trek.argtypes = (ctypes.c_double,)
+get_gradient_trek.restype = ctypes.POINTER(ctypes.c_double)
 
-func = lib.func
-func.argtypes = (ctypes.c_double,)
-func.restype = ctypes.c_double
+function = get_gradient_trek(0.005, 3, 3)
+dots = np.ctypeslib.as_array(
+    (ctypes.c_double * 4000).from_address(ctypes.addressof(function.contents))
+)
 
 
-def setup_func(f):
-    f.argtypes = (
-        ctypes.c_double,
-        ctypes.c_int,
+def draw_gif(ax, function_data, label="", accuracy=0.005, metod_num=1):
+    function = get_gradient_trek(accuracy, metod_num, function_data["c_func_num"])
+    dots = np.ctypeslib.as_array(
+        (ctypes.c_double * 4000).from_address(ctypes.addressof(function.contents))
     )
-    f.restype = ctypes.POINTER(ctypes.c_double)
 
-
-funcs = {
-    "bisection": lib.bisection,
-    "fibonacci": lib.fibonacci,
-    "goldenRatio": lib.goldenRatio,
-    "parabola": lib.parabola,
-    "brent": lib.brent,
-}
-for f in funcs.values():
-    setup_func(f)
-
-
-def draw_gif(ax, function, label=""):
-    if isinstance(function,list):
-        dots = function
-    else:
-        dots = np.ctypeslib.as_array(
-            (ctypes.c_double * 100).from_address(ctypes.addressof(function.contents))
-        )
-    n = 0
-    print(dots)
-
-    dots_y = []
+    old_val = 0
     dots_x = []
-    for i, d in enumerate(dots):
-        if not i or dots[i] != dots[i - 1]:
-            dots_y.append(func(d))
-            dots_x.append(d)
-            n += 1
-        else:
+    dots_y = []
+    for x, y in dots.reshape((-1, 2)):
+        if x + y == old_val or x + y == 0:
             break
+        dots_x.append(x)
+        dots_y.append(y)
+        old_val = x + y
+
+    dots_x = np.array(dots_x)
+    dots_y = np.array(dots_y)
+
+    scale_x = max(abs(dots_x)) * 0.1
+    scale_y = max(abs(dots_y)) * 0.1
+
+    x, y = np.mgrid[
+        min(dots_x) - scale_x : max(dots_x) + scale_x : 0.1,
+        min(dots_y) - scale_y : max(dots_y) + scale_y : 0.1,
+    ]
 
     ax.set_title(label)
-    ax.plot(
-        dots_x[:1], dots_y[:1], "*-", linewidth=0.6, markersize=4, label="opt", c="r"
-    )
     ax.legend()
 
     def animate(i):
+        ax.contour(x, y, function_data["func"](x, y), levels=10)
         ax.plot(
             dots_x[:i],
             dots_y[:i],
@@ -105,35 +117,36 @@ def draw_gif(ax, function, label=""):
             c="r",
         )
 
-    return animate, n
+    return animate, len(dots_x)
 
 
-x = np.linspace(0, 5, 100).astype(float)
-y = [func(i) for i in x]
 i = n = 0
-
 while True:
 
-    event, values = window.read(timeout=200)
+    event, values = window.read(timeout=100)
     if event == sg.WINDOW_CLOSED:
         break
 
-    if event in funcs:
+    if event in ["metod 1", "metod 2", "metod 3"]:
         accuracy = float(values["accuracy"])
-        itercount = int(values["itercount"])
-        f, n = draw_gif(ax, funcs[event](accuracy, itercount), event)
+        func_name = values["func"][0]
+        if event == "metod 1":
+            draw_func, n = draw_gif(ax, functions[func_name], func_name, accuracy, 1)
+        elif event == "metod 2":
+            draw_func, n = draw_gif(ax, functions[func_name], func_name, accuracy, 2)
+        else:
+            draw_func, n = draw_gif(ax, functions[func_name], func_name, accuracy, 3)
+
         i = 0
 
-    # Reset ax
     ax.cla()
     ax.set_title("Sensor Data")
     ax.set_xlabel("X axis")
     ax.set_ylabel("Y axis")
     ax.grid()
-    ax.plot(x, y, c="b")
 
     if i < n:
-        f(i)
+        draw_func(i)
         i += 1
 
     fig.canvas.draw()  # Draw curve really
