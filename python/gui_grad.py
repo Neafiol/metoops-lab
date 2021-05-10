@@ -1,4 +1,5 @@
 import math
+import time
 
 import PySimpleGUI as sg
 import matplotlib.pyplot as plt
@@ -148,6 +149,8 @@ while True:
     if i < n:
         draw_func(i)
         i += 1
+        if i == n:
+            time.sleep(3)
 
     fig.canvas.draw()  # Draw curve really
 
