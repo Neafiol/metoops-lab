@@ -5,7 +5,7 @@
 #define PI 3.14159265358979323846
 #define TAU 0.61803398874989484820
 #define MAX_ITER 2000
-#define MAX_VECTOR_SIZE 4000
+#define MAX_VECTOR_SIZE 10000
 
 struct vector;
 struct function2d;
@@ -164,9 +164,11 @@ double getParabolaMin(double x1, double y1, double x2, double y2, double x3, dou
 double brent(double a, double b, double eps, vector* v, vector* grad, baseFunction* func);
 
 void printVector(vector* result);
+void printTable(vector* n, vector* k);
 double* gradientDescent(double eps, int method, int funcIndex); // for ui
 
 double trace[2 * MAX_ITER]; // for ui
+int iterCount;
 
 function2d func2dArr[] = {
     {_2d, 64, 126, 64, -10, 30, 13}, // 64x^2 + 126xy + 64y^2 - 10x + 30y + 13
@@ -187,6 +189,7 @@ gradientFunc gradientArr[] = {
     gradientDescent3
 };
 
+// test for 2d functions
 void test1(int funcId) {
     function2d f = func2dArr[funcId];
     baseFunction* func = (baseFunction*) (&f);
@@ -197,13 +200,14 @@ void test1(int funcId) {
     printf("\n");
 
     for (int i = 0; i < 3; i++) {
-        printf("result%d\n", i);
+        printf("result%d:\n", i);
         vector result = gradientArr[i](init, eps, func);
         printVector(&result);
         printf("\n");
     }
 }
 
+// test for n-dimensional functions
 void test2(int funcId) {
     functionNd f = funcNdArr[funcId];
     baseFunction* func = (baseFunction*) (&f);
@@ -214,17 +218,17 @@ void test2(int funcId) {
     printf("\n");
 
     for (int i = 0; i < 3; i++) {
-        printf("result%d\n", i);
+        printf("result%d:\n", i);
         vector result = gradientArr[i](init, eps, func);
         printVector(&result);
         printf("\n");
     }
 }
 
-// for ui
+// trace test for 2d functions
 void test3(int methodId, int funcId) {
     double* res = gradientDescent(1e-16, methodId + 1, funcId + 1);
-    printf("trace\n");
+    printf("trace:\n");
     for (int i = 0; i < MAX_ITER; ++i) {
         double x = res[2 * i];
         double y = res[2 * i + 1];
@@ -240,8 +244,8 @@ int getRand(int from, int to) {
     return rand() % (to - from + 1) + from;
 }
 
-void test4(int n, int k) {
-    srand(3);
+//test for random n-dimensional functions
+void test4(int n, int k, bool out) {
     double eps = 1e-16;
     int base = 16;
 
@@ -253,7 +257,7 @@ void test4(int n, int k) {
     f.H[0] = base;
     f.H[1] = base * k;
 
-    if (n <= 26) {
+    if (n <= 26 && out) {
         printFunctionNd(&f);
         printf("\n");
     }
@@ -261,17 +265,29 @@ void test4(int n, int k) {
     baseFunction* func = (baseFunction*) (&f);
     vector init = getZeroVector(n);
 
-    printf("result\n");
     vector result = gradientDescent3(init, eps, func);
-    printVector(&result);
-    printf("\n");
+    if (out) {
+        printf("count of iterations: %d\n", iterCount);
+        printf("result:\n");
+        printVector(&result);
+        printf("\n");
+    }
+}
+
+void printIterationTable() {
+    vector n = {7, 10, 50, 100, 500, 1000, 5000, 10000};
+    vector k = {17, 1, 2, 5, 10, 20, 50, 100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000};
+    printTable(&n, &k);
 }
 
 int main() {
-    // test1(1);
+    srand(3);
+
+    // test1(2);
     // test2(0);
-    test3(0, 0);
-    // test4(3, 2);
+    // test3(2, 2);
+    // test4(10, 50, 1);
+    printIterationTable();
 }
 
 void printVector(vector* result) {
@@ -398,7 +414,7 @@ vector gradientDescent3(vector x, double eps, baseFunction* func) {
     vector p = grad;
     mulByScalar(&p, -1); // p = -Hf
 
-    for (int i = 1; i <= x.size && gradNorm2 > eps * eps ; i++) {
+    for (int i = 1; i <= MAX_ITER && gradNorm2 > eps * eps; i++) {
         vector Ap = applyOperator(func, &p); // Ap = A*p
         double Ap_p = dotProduct(&Ap, &p); // Ap_p = (A*p, p)
         double a = gradNorm2 / Ap_p; // a = ||Hf||^2 / (A*p, p)
@@ -416,6 +432,7 @@ vector gradientDescent3(vector x, double eps, baseFunction* func) {
 
         trace[2 * i] = x.data[0]; // for ui
         trace[2 * i + 1] = x.data[1]; // for ui
+        iterCount = i;
     }
     return x;
 }
@@ -531,4 +548,29 @@ vector getZeroVector(int size) {
         v.data[i] = 0;
     }
     return v;
+}
+
+void printTable(vector* n, vector* k) {
+    const int iter = 20;
+
+    printf("n, k ");
+    for (int j = 0; j < k->size; j++) {
+        printf(" & %-4d", (int) k->data[j]);
+    }
+    printf("\n");
+
+    for (int i = 0; i < n->size; i++) {
+        printf("%-5d", (int) n->data[i]);
+        for (int j = 0; j < k->size; j++) {
+            int iterCnt = 0;
+            for (int t = 0; t < iter; t++) {
+                test4(n->data[i], k->data[j], 0);
+                iterCnt += iterCount;
+            }
+            iterCnt = (iterCnt + iter / 2) / iter;
+            printf(" & %-4d", iterCnt);
+        }
+        printf("\n");
+        fflush(stdout);
+    }
 }
