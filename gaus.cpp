@@ -4,20 +4,19 @@
 #include <iomanip>
 #include <math.h>
 
-
 vector <double> gaus(vector <int> b, vector <vector <int> > c) {
     int n = b.size();
     vector <vector <double> > arr(n, vector <double> (n + 1));
     for (int i = 0; i < n; i++) {
         for (int j = 0; j <= n; j++) {
-            if (j + 1 <= n) arr[i][j] = c[i + 1][j + 1];
-            else arr[i][j] = b[i + 1];
+            if (j + 1 <= n) arr[i][j] = c[i][j];
+            else arr[i][j] = b[i];
         }
     }
  
     for (int i = 0; i < n; i++) {
         for (int j = i; j < n; j++) {
-            if (fabs(arr[j][i]) > fabs(arr[i][i])) {
+            if (arr[j][i] != 0) {
                 swap(arr[i], arr[j]);
             }
         }
@@ -38,4 +37,3 @@ vector <double> gaus(vector <int> b, vector <vector <int> > c) {
     }
     return ans;
 }
- 
