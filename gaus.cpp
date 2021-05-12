@@ -1,9 +1,6 @@
-#include <vector>
-#include <cmath>
-#include <iostream>
-#include <iomanip>
-#include <math.h>
-
+#include <bits/stdc++.h>
+#define int long long
+using namespace std;
 vector <double> gaus(vector <int> b, vector <vector <int> > c) {
     int n = b.size();
     vector <vector <double> > arr(n, vector <double> (n + 1));
@@ -13,7 +10,7 @@ vector <double> gaus(vector <int> b, vector <vector <int> > c) {
             else arr[i][j] = b[i];
         }
     }
- 
+
     for (int i = 0; i < n; i++) {
         for (int j = i; j < n; j++) {
             if (arr[j][i] != 0) {
@@ -36,4 +33,10 @@ vector <double> gaus(vector <int> b, vector <vector <int> > c) {
         ans[i] = sum;
     }
     return ans;
+}
+
+signed main() {
+    vector <double> ans = gaus({4}, {{2}});
+    for (int i = 0; i < ans.size(); i++) cout << (int)ans[i] << " ";
+    cout << endl;
 }
