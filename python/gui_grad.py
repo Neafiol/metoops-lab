@@ -85,9 +85,7 @@ dots = np.ctypeslib.as_array(
 )
 
 
-def draw_gif(
-    ax, function_data, label="", accuracy=0.005, metod_num=1, skale=1.0, iter=-1
-):
+def draw_gif(ax, function_data, label="", accuracy=0.005, metod_num=1, skale=1.0):
     function = get_gradient_trek(accuracy, metod_num, function_data["c_func_num"])
     dots = np.ctypeslib.as_array(
         (ctypes.c_double * 4000).from_address(ctypes.addressof(function.contents))
@@ -120,15 +118,12 @@ def draw_gif(
     ax.set_title(label)
     ax.legend()
 
-    def animate(i, linear_level):
+    def animate(i, linear_level, iter):
         if linear_level:
-            ax.contour(x, y, function_data["func"](x, y), levels=10)
+            ax.contour(x, y, function_data["func"](x, y), levels=14)
 
         datax = dots_x[:i]
         dotay = dots_y[:i]
-        if iter > -1:
-            datax = dots_x[iter : iter + 1]
-            dotay = dots_x[iter : iter + 1]
 
         ax.plot(
             datax,
@@ -137,8 +132,11 @@ def draw_gif(
             linewidth=0.6,
             markersize=4,
             label="opt",
-            c="r",
         )
+        if iter > -1:
+            datax = datax[iter : iter + 1]
+            dotay = dotay[iter : iter + 1]
+            ax.scatter(datax, dotay, c="r")
 
     return animate, len(dots_x)
 
@@ -165,19 +163,15 @@ while True:
     if event in ["metod 1", "metod 2", "metod 3"]:
         accuracy = float(values["accuracy"])
         skale = float(values["skale"])
-        if values["iter"]:
-            iter = int(values["iter"])
-        else:
-            iter = -1
 
         func_name = values["func"][0]
         if event == "metod 1":
             draw_func, n = draw_gif(
-                ax, functions[func_name], func_name, accuracy, 1, skale, iter
+                ax, functions[func_name], func_name, accuracy, 1, skale
             )
         elif event == "metod 2":
             draw_func, n = draw_gif(
-                ax, functions[func_name], func_name, accuracy, 2, skale, iter
+                ax, functions[func_name], func_name, accuracy, 2, skale
             )
         else:
             draw_func, n = draw_gif(
@@ -200,7 +194,12 @@ while True:
         ax.grid()
 
     if i < n:
-        draw_func(i, settings["linear_level"])
+        if values["iter"]:
+            iter = int(values["iter"])
+        else:
+            iter = -1
+
+        draw_func(i, settings["linear_level"], iter)
         i += 1
         if i == n:
             time.sleep(3)
