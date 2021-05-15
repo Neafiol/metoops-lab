@@ -280,12 +280,6 @@ void printIterationTable() {
     printTable(&n, &k);
 }
 
-void printIterationTable() {
-    vector n = {7, 10, 50, 100, 500, 1000, 5000, 10000};
-    vector k = {17, 1, 2, 5, 10, 20, 50, 100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000};
-    printTable(&n, &k);
-}
-
 int main() {
     srand(3);
 
@@ -545,31 +539,6 @@ vector getVectorNd(double* data, int size) {
         v.data[i] = data[i];
     }
     return v;
-}
-
-void printTable(vector* n, vector* k) {
-    const int iter = 20;
-
-    printf("n, k ");
-    for (int j = 0; j < k->size; j++) {
-        printf(" & %-4d", (int) k->data[j]);
-    }
-    printf("\n");
-
-    for (int i = 0; i < n->size; i++) {
-        printf("%-5d", (int) n->data[i]);
-        for (int j = 0; j < k->size; j++) {
-            int iterCnt = 0;
-            for (int t = 0; t < iter; t++) {
-                test4(n->data[i], k->data[j], 0);
-                iterCnt += iterCount;
-            }
-            iterCnt = (iterCnt + iter / 2) / iter;
-            printf(" & %-4d", iterCnt);
-        }
-        printf("\n");
-        fflush(stdout);
-    }
 }
 
 vector getZeroVector(int size) {
