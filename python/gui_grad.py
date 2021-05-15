@@ -56,6 +56,15 @@ layout = [
         sg.Text("Accurance"),
         sg.Input(key="accuracy", default_text="0.0001", size=(10, 1)),
     ],
+    [
+        sg.Button("On/Off XY labels", key="label"),
+        sg.Button("On/Off linear level", key="linear_level"),
+        sg.Button("On/Off grid", key="grid"),
+        sg.Text("Skale"),
+        sg.Input(key="skale", default_text="1", size=(10, 1)),
+        sg.Text("Show only iter:"),
+        sg.Input(key="iter", default_text="", size=(10, 1)),
+    ],
 ]
 
 window = sg.Window("Matplotlib", layout, finalize=True)
@@ -76,7 +85,9 @@ dots = np.ctypeslib.as_array(
 )
 
 
-def draw_gif(ax, function_data, label="", accuracy=0.005, metod_num=1):
+def draw_gif(
+    ax, function_data, label="", accuracy=0.005, metod_num=1, skale=1.0, iter=-1
+):
     function = get_gradient_trek(accuracy, metod_num, function_data["c_func_num"])
     dots = np.ctypeslib.as_array(
         (ctypes.c_double * 4000).from_address(ctypes.addressof(function.contents))
@@ -87,6 +98,9 @@ def draw_gif(ax, function_data, label="", accuracy=0.005, metod_num=1):
     dots_y = []
     for x, y in dots.reshape((-1, 2)):
         if x + y == old_val or x + y == 0:
+            for _ in range(10):
+                dots_x.append(x)
+                dots_y.append(y)
             break
         dots_x.append(x)
         dots_y.append(y)
@@ -95,8 +109,8 @@ def draw_gif(ax, function_data, label="", accuracy=0.005, metod_num=1):
     dots_x = np.array(dots_x)
     dots_y = np.array(dots_y)
 
-    scale_x = max(abs(dots_x)) * 0.1
-    scale_y = max(abs(dots_y)) * 0.1
+    scale_x = max(abs(dots_x)) * 0.1 * skale
+    scale_y = max(abs(dots_y)) * 0.1 * skale
 
     x, y = np.mgrid[
         min(dots_x) - scale_x : max(dots_x) + scale_x : 0.1,
@@ -106,11 +120,19 @@ def draw_gif(ax, function_data, label="", accuracy=0.005, metod_num=1):
     ax.set_title(label)
     ax.legend()
 
-    def animate(i):
-        ax.contour(x, y, function_data["func"](x, y), levels=10)
+    def animate(i, linear_level):
+        if linear_level:
+            ax.contour(x, y, function_data["func"](x, y), levels=10)
+
+        datax = dots_x[:i]
+        dotay = dots_y[:i]
+        if iter > -1:
+            datax = dots_x[iter : iter + 1]
+            dotay = dots_x[iter : iter + 1]
+
         ax.plot(
-            dots_x[:i],
-            dots_y[:i],
+            datax,
+            dotay,
             "*-",
             linewidth=0.6,
             markersize=4,
@@ -122,32 +144,63 @@ def draw_gif(ax, function_data, label="", accuracy=0.005, metod_num=1):
 
 
 i = n = 0
+settings = {
+    "label": True,
+    "grid": True,
+    "linear_level": True,
+}
 while True:
 
     event, values = window.read(timeout=100)
     if event == sg.WINDOW_CLOSED:
         break
 
+    if event == "label":
+        settings["label"] ^= 1
+    if event == "grid":
+        settings["grid"] ^= 1
+    if event == "linear_level":
+        settings["linear_level"] ^= 1
+
     if event in ["metod 1", "metod 2", "metod 3"]:
         accuracy = float(values["accuracy"])
+        skale = float(values["skale"])
+        if values["iter"]:
+            iter = int(values["iter"])
+        else:
+            iter = -1
+
         func_name = values["func"][0]
         if event == "metod 1":
-            draw_func, n = draw_gif(ax, functions[func_name], func_name, accuracy, 1)
+            draw_func, n = draw_gif(
+                ax, functions[func_name], func_name, accuracy, 1, skale, iter
+            )
         elif event == "metod 2":
-            draw_func, n = draw_gif(ax, functions[func_name], func_name, accuracy, 2)
+            draw_func, n = draw_gif(
+                ax, functions[func_name], func_name, accuracy, 2, skale, iter
+            )
         else:
-            draw_func, n = draw_gif(ax, functions[func_name], func_name, accuracy, 3)
+            draw_func, n = draw_gif(
+                ax,
+                functions[func_name],
+                func_name,
+                accuracy,
+                3,
+                skale,
+            )
 
         i = 0
 
     ax.cla()
-    ax.set_title("Sensor Data")
-    ax.set_xlabel("X axis")
-    ax.set_ylabel("Y axis")
-    ax.grid()
+    ax.set_title("Вид сверху")
+    if settings["label"]:
+        ax.set_xlabel("X axis")
+        ax.set_ylabel("Y axis")
+    if settings["grid"]:
+        ax.grid()
 
     if i < n:
-        draw_func(i)
+        draw_func(i, settings["linear_level"])
         i += 1
         if i == n:
             time.sleep(3)
