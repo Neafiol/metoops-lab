@@ -1,10 +1,12 @@
+#pragma GCC optimize("O3")
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
 #define PI 3.14159265358979323846
 #define TAU 0.61803398874989484820
-#define MAX_ITER 2000
+#define MAX_ITER 10000
 #define MAX_VECTOR_SIZE 10000
 
 struct vector;
@@ -164,7 +166,6 @@ double getParabolaMin(double x1, double y1, double x2, double y2, double x3, dou
 double brent(double a, double b, double eps, vector* v, vector* grad, baseFunction* func);
 
 void printVector(vector* result);
-void printTable(vector* n, vector* k);
 double* gradientDescent(double eps, int method, int funcIndex); // for ui
 
 double trace[2 * MAX_ITER]; // for ui
@@ -245,9 +246,9 @@ int getRand(int from, int to) {
 }
 
 //test for random n-dimensional functions
-void test4(int n, int k, bool out) {
-    double eps = 1e-16;
-    int base = 16;
+void test4(int n, int k, gradientFunc gFunc, int out) {
+    double eps = 1e-2;
+    int base = 1;
 
     functionNd f = {Nd, n};
     for (int i = 0; i < n; i++) {
@@ -257,7 +258,7 @@ void test4(int n, int k, bool out) {
     f.H[0] = base;
     f.H[1] = base * k;
 
-    if (n <= 26 && out) {
+    if (n <= 10 && out) {
         printFunctionNd(&f);
         printf("\n");
     }
@@ -265,35 +266,55 @@ void test4(int n, int k, bool out) {
     baseFunction* func = (baseFunction*) (&f);
     vector init = getZeroVector(n);
 
-    vector result = gradientDescent3(init, eps, func);
+    vector result = gFunc(init, eps, func);
     if (out) {
         printf("count of iterations: %d\n", iterCount);
-        printf("result:\n");
-        printVector(&result);
-        printf("\n");
+        if (n <= 10) {
+            printf("result:\n");
+            printVector(&result);
+            printf("\n");
+        }
     }
 }
 
-void printIterationTable() {
-    vector n = {7, 10, 50, 100, 500, 1000, 5000, 10000};
-    vector k = {17, 1, 2, 5, 10, 20, 50, 100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000};
-    printTable(&n, &k);
+void printTable(vector* n, vector* k, gradientFunc gFunc) {
+    const int iter = 20;
+
+    printf("n, k ");
+    for (int j = 0; j < k->size; j++) {
+        printf(" & %-4d", (int) k->data[j]);
+    }
+    printf("\n");
+
+    for (int i = 0; i < n->size; i++) {
+        printf("%-5d", (int) n->data[i]);
+        for (int j = 0; j < k->size; j++) {
+            int iterAverage = 0;
+            for (int t = 0; t < iter; t++) {
+                test4(n->data[i], k->data[j], gFunc, 0);
+                iterAverage += iterCount;
+            }
+            iterAverage = (iterAverage + iter / 2) / iter;
+            printf(" & %-4d", iterAverage);
+        }
+        printf("\n");
+        fflush(stdout);
+    }
 }
 
-void printIterationTable() {
-    vector n = {7, 10, 50, 100, 500, 1000, 5000, 10000};
-    vector k = {17, 1, 2, 5, 10, 20, 50, 100, 200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000};
-    printTable(&n, &k);
+void printIterationTable(gradientFunc gFunc) {
+    vector n = {4, 10, 100, 1000, 5000};
+    vector k = {7, 1, 5, 10, 50, 100, 500, 1000};
+    printTable(&n, &k, gFunc);
 }
 
 int main() {
-    srand(3);
+    srand(4);
 
     // test1(2);
     // test2(0);
     // test3(2, 2);
-    // test4(10, 50, 1);
-    printIterationTable();
+    printIterationTable(gradientDescent3);
 }
 
 void printVector(vector* result) {
@@ -383,7 +404,19 @@ vector gradientDescent1(vector current, double eps, baseFunction* func) {
             }
             lambda *= 0.5;
         }
+        lambda *= 3;
         // printVector(&current);
+        // printf("x1 = %0.17f\n", current.data[1]);
+        iterCount = i + 1;
+        int equal = 1;
+        for (int i = 0; i < current.size; i++) {
+            if (current.data[i] != last.data[i]) {
+                equal = 0;
+            }
+        }
+        if (equal) {
+            break;
+        }
     };
     return current;
 }
@@ -404,9 +437,10 @@ vector gradientDescent2(vector current, double eps, baseFunction* func) {
         last = current;
 
         normalize(&grad);
-        double lambda = brent(lambdaMin, lambdaMax, eps, &current, &grad, func);
+        double lambda = brent(lambdaMin, lambdaMax, 1e-8, &current, &grad, func);
         current = nextValue(&current, &grad, lambda);
         // printVector(&current);
+        iterCount = i + 1;
     };
     return current;
 }
@@ -547,31 +581,6 @@ vector getVectorNd(double* data, int size) {
     return v;
 }
 
-void printTable(vector* n, vector* k) {
-    const int iter = 20;
-
-    printf("n, k ");
-    for (int j = 0; j < k->size; j++) {
-        printf(" & %-4d", (int) k->data[j]);
-    }
-    printf("\n");
-
-    for (int i = 0; i < n->size; i++) {
-        printf("%-5d", (int) n->data[i]);
-        for (int j = 0; j < k->size; j++) {
-            int iterCnt = 0;
-            for (int t = 0; t < iter; t++) {
-                test4(n->data[i], k->data[j], 0);
-                iterCnt += iterCount;
-            }
-            iterCnt = (iterCnt + iter / 2) / iter;
-            printf(" & %-4d", iterCnt);
-        }
-        printf("\n");
-        fflush(stdout);
-    }
-}
-
 vector getZeroVector(int size) {
     vector v;
     v.size = size;
@@ -579,29 +588,4 @@ vector getZeroVector(int size) {
         v.data[i] = 0;
     }
     return v;
-}
-
-void printTable(vector* n, vector* k) {
-    const int iter = 20;
-
-    printf("n, k ");
-    for (int j = 0; j < k->size; j++) {
-        printf(" & %-4d", (int) k->data[j]);
-    }
-    printf("\n");
-
-    for (int i = 0; i < n->size; i++) {
-        printf("%-5d", (int) n->data[i]);
-        for (int j = 0; j < k->size; j++) {
-            int iterCnt = 0;
-            for (int t = 0; t < iter; t++) {
-                test4(n->data[i], k->data[j], 0);
-                iterCnt += iterCount;
-            }
-            iterCnt = (iterCnt + iter / 2) / iter;
-            printf(" & %-4d", iterCnt);
-        }
-        printf("\n");
-        fflush(stdout);
-    }
 }

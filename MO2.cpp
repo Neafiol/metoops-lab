@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
 #define PI 3.14159265358979323846
@@ -135,13 +136,11 @@ double * fibonacci(double eps, int n2) {
     return res;
 }
 
-double * parabolaCoef(double x1, double x2, double x3, double y1, double y2, double y3) {
-    static double arr[3];
+void parabolaCoef(double x1, double x2, double x3, double y1, double y2, double y3, double *arr, int *i) {
     double D = (x1 - x2) * (x1 - x3) * (x2 - x3);
-    arr[0] = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / D;
-    arr[1] = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3)) / D;
-    arr[2] = (x2 * x3 * (x2 - x3) * y1 + x3 * x1 * (x3 - x1) * y2 + x1 * x2 * (x1 - x2) * y3) / D;
-    return arr;
+    arr[(*i)++] = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / D;
+    arr[(*i)++] = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3)) / D;
+    arr[(*i)++] = (x2 * x3 * (x2 - x3) * y1 + x3 * x1 * (x3 - x1) * y2 + x1 * x2 * (x1 - x2) * y3) / D;
 }
 
 double * parabola(double eps, int n) {
@@ -169,12 +168,9 @@ double * parabola(double eps, int n) {
         double a3 = (((f3 - f1) / (x3 - x1)) - a2) / (x3 - x2);
         x = 0.5 * (x1 + x2 - (a2 / a3));
         double f = func(x);
-        step = abs(x - prev_x);
+        step = fabs(x - prev_x);
 
-        double *arr = parabolaCoef(x1, x2, x3, f1, f2, f3);
-        res[j++] = arr[0];
-        res[j++] = arr[1];
-        res[j++] = arr[2];
+        parabolaCoef(x1, x2, x3, f1, f2, f3, res, &j);
 
         if (x1 < x && x < x2 && f >= f2) {
             x1 = x;
@@ -222,8 +218,9 @@ double getParabolaMin(double x1, double y1, double x2, double y2, double x3, dou
 }
 
 double * brent(double eps, int n) {
-    static double res[100];
+    static double res[400];
     int i = 0;
+    int j = 100;
     double a = 0;
     double b = 2 * PI;
 
@@ -239,12 +236,21 @@ double * brent(double eps, int n) {
         prev_step = step;
         double u;
 
-        if ((x1 != x2 && x2 != x3 && x3 != x1) &&
-            (f1 != f2 && f2 != f3 && f3 != f1) &&
-            (u = getParabolaMin(x1, f1, x2, f2, x3, f3),
-                (u >= a + eps && u <= b - eps && 2 * abs(u - x1) < prev2_step)))
+        int cond = (x1 != x2 && x2 != x3 && x3 != x1) &&
+                   (f1 != f2 && f2 != f3 && f3 != f1);
+
+        if (cond) {
+            parabolaCoef(x1, x2, x3, f1, f2, f3, res, &j);
+        } else {
+            res[j++] = 0;
+            res[j++] = 0;
+            res[j++] = 0;
+        }
+
+        if (cond && (u = getParabolaMin(x1, f1, x2, f2, x3, f3),
+                        (u >= a + eps && u <= b - eps && 2 * fabs(u - x1) < prev2_step)))
         {
-            step = abs(u - x1);
+            step = fabs(u - x1);
         } else if (2 * x1 < b - a) {
             step = b - x1;
             u = x1 + (1 - TAU) * step;
@@ -252,7 +258,7 @@ double * brent(double eps, int n) {
             step = x1 - a;
             u = x1 - (1 - TAU) * step;
         }
-        if (abs(u - x1) < eps) {
+        if (fabs(u - x1) < eps) {
             u = x1 + sign(u - x1) * eps;
         }
 
@@ -288,18 +294,32 @@ double * brent(double eps, int n) {
         res[i++] = u;
     }
     complete(res, i);
+
+    j -= 3;
+    if (j < 100) {
+        j = 100;
+    }
+    for (int k = j; k < 398;) {
+        res[k++] = res[j];
+        res[k++] = res[j + 1];
+        res[k++] = res[j + 2];
+    }
     return res;
 }
 
+double * brent2(double eps, int n) {
+    return brent(eps, n) + 100;
+}
+
 int main() {
-    double *arr0 = parabola(0.000001, 0);
-    for (int i = 0; i < 100; i++) {
+    double *arr0 = brent(1e-8, 0);
+    for (int i = 0; i < 50; i++) {
         printf("%f %f\n", arr0[i], func(arr0[i]));
     }
 
     printf("\n");
-    double *arr = parabola2(0.000001, 0);
-    for (int i = 0; i < 300; i += 3) {
+    double *arr = brent2(1e-8, 0);
+    for (int i = 0; i < 150; i += 3) {
         printf("%f * x^2 + %f * x + %f\n", arr[i], arr[i + 1], arr[i + 2]);
     }
     return 0;
