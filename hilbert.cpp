@@ -51,9 +51,8 @@ void complete(vector<int>& sizes) {
 void printResultTable(vector<int>& sizes) {
     for (int size : sizes) {
         auto res = readResult(1, size, getName(size));
-        auto A = getHilbertMatrix(size);
-        auto res2 = multiply(A, res);
-        printf("%4d %20.2f %f\n", size, absoluteError(res, res2), relativeError(res, res2));
+        auto x = getRange(1, size);
+        printf("%4d %15f %f\n", size, absoluteError(x, res), relativeError(x, res));
     }
 }
 
