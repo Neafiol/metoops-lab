@@ -1,3 +1,4 @@
+#pragma GCC optimize("O3")
 #include "LUdecomposition.h"
 
 #include <vector>
@@ -16,7 +17,6 @@ const char separator =
 #else
         '\\';
 #endif
-
 
 void UxSolution(vector<double>& x, int size, vector<int>& ia, vector<double>& al,
                 vector<double>& au, vector<double>& di, vector<double>& y) {
@@ -144,6 +144,7 @@ void completeTest(int n, string const& dir_prefix) {
     solution(size, ia, al, au, di, b, x);
     string fileOut = fs::current_path().string() + separator + dir_prefix + to_string(n) + separator + "test.out";
     ofstream out(fileOut);
+    out.precision(15);
     for (double i : x) {
         out << i << '\n';
     }
@@ -162,6 +163,7 @@ void createTest(vector<vector<double>>& A, vector<double>& b, string const& dir_
     fs::create_directory(fs::current_path().string() + separator + dir_prefix + to_string(max + 1));
     string fileName = fs::current_path().string() + separator + dir_prefix + to_string(max + 1) + separator + "test.in";
     ofstream file(fileName);
+    file.precision(15);
     int size = A.size();
     vector<int> count;
     for (int i = 1; i < size; i++) {
@@ -201,6 +203,15 @@ void createTest(vector<vector<double>>& A, vector<double>& b, string const& dir_
     println(di, file);
     println(b, file);
     file.close();
+}
+
+vector<double> readResult(int n, int size, string const& dir_prefix) {
+    vector<double> res;
+    string file = fs::current_path().string() + separator + dir_prefix + to_string(n) + separator + "test.out";
+    ifstream in(file);
+    input(res, size, in);
+    in.close();
+    return res;
 }
 
 void createTest() {
