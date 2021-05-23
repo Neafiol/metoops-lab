@@ -1,12 +1,22 @@
+#include "LUdecomposition.h"
+
+#include <vector>
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <regex>
 #include <filesystem>
 
 namespace fs = std::filesystem;
 using fs::directory_iterator;
 using namespace std;
+
+const char separator =
+#ifdef __linux__
+        '/';
+#else
+        '\\';
+#endif
+
 
 void UxSolution(vector<double>& x, int size, vector<int>& ia, vector<double>& al,
                 vector<double>& au, vector<double>& di, vector<double>& y) {
@@ -104,7 +114,7 @@ void printProfileForm(int size, vector<int>& ia, vector<double>& al, vector<doub
     println(di);
 }
 
-void completeTest(int n) {
+void completeTest(int n, string const& dir_prefix) {
     cout << "Test " << n << '\n';
     int size;
     vector<int> ia;
@@ -113,7 +123,7 @@ void completeTest(int n) {
     vector<double> di;
     vector<double> b;
     cout << fs::current_path() << '\n';
-    string fileIn = fs::current_path().string() + "\\test" + to_string(n) + "\\test.in";
+    string fileIn = fs::current_path().string() + separator + dir_prefix + to_string(n) + separator + "test.in";
     cout << fileIn << "\n";
     ifstream in(fileIn);
     if (!in.good()) {
@@ -132,7 +142,7 @@ void completeTest(int n) {
 //    printProfileForm(size, ia, al, au, di);
     vector<double> x(size);
     solution(size, ia, al, au, di, b, x);
-    string fileOut = fs::current_path().string() + "\\test" + to_string(n) + "\\test.out";
+    string fileOut = fs::current_path().string() + separator + dir_prefix + to_string(n) + separator + "test.out";
     ofstream out(fileOut);
     for (double i : x) {
         out << i << '\n';
@@ -140,8 +150,8 @@ void completeTest(int n) {
     out.close();
 }
 
-void createTest(vector<vector<double>>& A, vector<double>& b) {
-    const regex reg("test([0-9]*)");
+void createTest(vector<vector<double>>& A, vector<double>& b, string const& dir_prefix) {
+    const regex reg(dir_prefix + "([0-9]*)");
     smatch match;
     int max = 0;
     for (const auto& file : directory_iterator(fs::current_path())) {
@@ -149,8 +159,8 @@ void createTest(vector<vector<double>>& A, vector<double>& b) {
         regex_search(name, match, reg);
         if (!match.empty() && match[1] > max) max = stoi(match[1]);
     }
-    fs::create_directory(fs::current_path().string() + "\\test" + to_string(max + 1));
-    string fileName = fs::current_path().string() + "\\test" + to_string(max + 1) + "\\test.in";
+    fs::create_directory(fs::current_path().string() + separator + dir_prefix + to_string(max + 1));
+    string fileName = fs::current_path().string() + separator + dir_prefix + to_string(max + 1) + separator + "test.in";
     ofstream file(fileName);
     int size = A.size();
     vector<int> count;
@@ -193,18 +203,17 @@ void createTest(vector<vector<double>>& A, vector<double>& b) {
     file.close();
 }
 
-void createTest1() {
+void createTest() {
     vector<vector<double>> A = {{3, 0,  13, 0, 0},
                                 {0, 11, 1,  0, 0},
                                 {2, 0,  25, 4, 0},
                                 {0, 9,  5,  7, 0},
                                 {0, 0,  0,  0, 19}};
     vector<double> b = {1, 2, 3, 4, 5};
-    createTest(A, b);
+    createTest(A, b, "test");
 }
 
-int main() {
-//    createTest1();
-    completeTest(1);
-    return 0;
+void test() {
+    createTest();
+    completeTest(1, "test");
 }
