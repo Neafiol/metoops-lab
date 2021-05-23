@@ -18,9 +18,9 @@ void print(vector<vector<double>> const& matrix) {
 vector<double> multiply(vector<vector<double>> const& m, vector<double> const& v) {
     auto size = v.size();
     vector<double> res(size);
-    for (auto& x : m) {
-        for (int i = 0; i < size; ++i) {
-            res[i] += x[i] * v[i];
+    for (int i = 0; i < size; ++i) {
+        for (int j = 0; j < size; ++j) {
+            res[i] += m[i][j] * v[j];
         }
     }
     return res;

@@ -37,7 +37,8 @@ void generate(vector<int>& sizes) {
         auto A = getHilbertMatrix(size);
 //        print(A);
         auto x = getRange(1, size);
-        createTest(A, x, getName(size));
+        auto f = multiply(A, x);
+        createTest(A, f, getName(size));
     }
 }
 
@@ -50,7 +51,8 @@ void complete(vector<int>& sizes) {
 void printResultTable(vector<int>& sizes) {
     for (int size : sizes) {
         auto res = readResult(1, size, getName(size));
-        auto res2 = multiply(getHilbertMatrix(size), res);
+        auto A = getHilbertMatrix(size);
+        auto res2 = multiply(A, res);
         printf("%4d %20.2f %f\n", size, absoluteError(res, res2), relativeError(res, res2));
     }
 }
