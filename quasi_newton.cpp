@@ -209,6 +209,7 @@ Vect quasiNewton(Vect&& x, double eps, double sig, Func&& f, GradFunc&& grad, Ma
     const double minAlpha = 0;
     const double maxAlpha = 1e6;
 
+    cout << "init: " << x << endl;
     auto G = G0;
     int n = x.size();
     auto w = -grad(x);
@@ -232,11 +233,14 @@ Vect quasiNewton(Vect&& x, double eps, double sig, Func&& f, GradFunc&& grad, Ma
 
     }
 
+    cout << "min: " << x << endl;
+    cout << "val: " << f(x) << "\n\n";
     return x;
 }
 
 template<typename Vect, typename Matr, typename Func, typename GradFunc>
 Vect BFS(Vect x, double eps, double sig, Func&& f, GradFunc&& grad, Matr G) {
+    cout << "BFS" << endl;
     return quasiNewton(x, eps, sig, f, grad, G, [] (auto const& G, auto const& dx, auto const& dw) {
         auto z = G * dw;
         auto rho = dotProduct(z, dw);
@@ -249,6 +253,7 @@ Vect BFS(Vect x, double eps, double sig, Func&& f, GradFunc&& grad, Matr G) {
 
 template<typename Vect, typename Matr, typename Func, typename GradFunc>
 Vect powell(Vect x, double eps, double sig, Func&& f, GradFunc&& grad, Matr G) {
+    cout << "powell" << endl;
     return quasiNewton(x, eps, sig, f, grad, G, [] (auto const& G, auto const& dx, auto const& dw) {
         auto dt = dx + G * dw;
         return G - dt * (dt / dotProduct(dw, dt));
@@ -367,16 +372,8 @@ void test0() {
         return {4 * a * a * a, 200 * y};
     };
     matr_t G = idenityMatrix(x.size());
-    
-    cout << "BFS" << endl;
-    auto v = BFS(x, eps, sig, f, grad, G);
-    cout << v << endl;
-    cout << f(v) << endl;
-
-    cout << "powell" << endl;
-    auto v2 = powell(x, eps, sig, f, grad, G);
-    cout << v2 << endl;
-    cout << f(v2) << endl;
+    BFS(x, eps, sig, f, grad, G);
+    powell(x, eps, sig, f, grad, G);
 }
 
 void test1() {
@@ -384,16 +381,8 @@ void test1() {
     double eps = 1e-12;
     double sig = 1e-8;
     matr_t G = idenityMatrix(x.size());
-
-    cout << "BFS" << endl;
-    auto v = BFS(x, eps, sig, func1v, grad(func1v), G);
-    cout << v << endl;
-    cout << func1v(v) << endl;
-
-    cout << "powell" << endl;
-    auto v2 = powell(x, eps, sig, func1v, grad(func1v), G);
-    cout << v2 << endl;
-    cout << func1v(v2) << endl;
+    BFS(x, eps, sig, func1v, grad(func1v), G);
+    powell(x, eps, sig, func1v, grad(func1v), G);
 }
 
 void test2() {
@@ -402,25 +391,17 @@ void test2() {
     double sig = 1e-8;
     matr_t G = idenityMatrix(x.size());
     auto run1 = [&] (vect_t const& x) {
-        auto v = BFS(x, eps, sig, func2v, grad(func2v), G);
-        cout << "init: " << x << endl;
-        cout << "min: " << v << endl;
-        cout << "val: " << func2v(v) << endl << '\n';
+        BFS(x, eps, sig, func2v, grad(func2v), G);
     };
     auto run2 = [&] (vect_t const& x) {
-        auto v = powell(x, eps, sig, func2v, grad(func2v), G);
-        cout << "init: " << x << endl;
-        cout << "min: " << v << endl;
-        cout << "val: " << func2v(v) << endl << '\n';
+        powell(x, eps, sig, func2v, grad(func2v), G);
     };
 
-    cout << "BFS" << endl;
     run1({-19, 15});
     run1({19, 15});
     run1({19, -15});
     run1({59, -15});
 
-    cout << "powell" << endl;
     run2({-19, 15});
     run2({19, 15});
     run2({19, -15});
@@ -433,15 +414,8 @@ void test3() {
     double sig = 1e-8;
     matr_t G = idenityMatrix(x.size());
 
-    cout << "BFS" << endl;
-    auto v = BFS(x, eps, sig, func3v, grad(func3v), G);
-    cout << "min: " << v << endl;
-    cout << "val: " << func3v(v) << endl;
-
-    cout << "\npowell" << endl;
-    auto v2 = powell(x, eps, sig, func3v, grad(func3v), G);
-    cout << "min: " << v2 << endl;
-    cout << "val: " << func3v(v2) << endl;
+    BFS(x, eps, sig, func3v, grad(func3v), G);
+    powell(x, eps, sig, func3v, grad(func3v), G);
 }
 
 void test4() {
@@ -450,15 +424,8 @@ void test4() {
     double sig = 1e-8;
     matr_t G = idenityMatrix(x.size());
 
-    cout << "BFS" << endl;
-    auto v = BFS(x, eps, sig, func4v, grad(func4v), G);
-    cout << v << endl;
-    cout << func4v(v) << endl;
-
-    cout << "powell" << endl;
-    auto v2 = powell(x, eps, sig, func4v, grad(func4v), G);
-    cout << v2 << endl;
-    cout << func4v(v2) << endl;
+    BFS(x, eps, sig, func4v, grad(func4v), G);
+    powell(x, eps, sig, func4v, grad(func4v), G);
 }
 
 void gradTest() {
@@ -470,6 +437,6 @@ void gradTest() {
 
 int main() {
     cout.precision(12);
-    test1();
+    test4();
     // gradTest();
 }
