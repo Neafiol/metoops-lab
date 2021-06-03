@@ -6,7 +6,7 @@
 #include <functional>
 #include <ctime>
 
-#define MAX_ITER 1000
+#define MAX_ITER 500
 
 using namespace std;
 
@@ -213,7 +213,7 @@ Vect quasiNewton(Vect&& x, double eps, double sig, Func&& f, GradFunc&& grad, Ma
             break;
         }
         auto w1 = -grad(x);
-        if (i % 50 == 0) {
+        if (i % 40 == 0) {
             G = G0;
         } else {
             G = nextG(G, dx, w1 - w);
@@ -378,7 +378,7 @@ void runTest(matr_t& inits, Func&& f) {
 }
 
 void test1() {
-    matr_t inits = {{0.9, 1.1}, {1.02, 0.99}, {1.02, 1.02}};
+    matr_t inits = {{0.9, 1.1}, {1.02, 0.99}, {1.01, 1.01}};
     runTest(inits, func1v);
 }
 
