@@ -130,17 +130,6 @@ matr_t operator-(matr_t const& v, matr_t const& u) {
     return w;
 }
 
-matr_t transpose(matr_t const& v) {
-    auto n = v.size();
-    matr_t w(n, vect_t(n));
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            w[i][j] = v[j][i];
-        }
-    }
-    return w;
-}
-
 double getParabolaMin(double x1, double y1, double x2, double y2, double x3, double y3) {
     double z1 = x1 * (y3 - y2);
     double z2 = x2 * (y1 - y3);
@@ -230,7 +219,6 @@ Vect quasiNewton(Vect&& x, double eps, double sig, Func&& f, GradFunc&& grad, Ma
             G = nextG(G, dx, w1 - w);
         }
         w = move(w1);
-
     }
 
     cout << "min: " << x << endl;
@@ -376,56 +364,37 @@ void test0() {
     powell(x, eps, sig, f, grad, G);
 }
 
-void test1() {
-    vect_t x = {0.9, 1.1};
+template<typename Func>
+void runTest(matr_t& inits, Func&& f) {
+    matr_t G = idenityMatrix(inits[0].size());
     double eps = 1e-12;
     double sig = 1e-8;
-    matr_t G = idenityMatrix(x.size());
-    BFS(x, eps, sig, func1v, grad(func1v), G);
-    powell(x, eps, sig, func1v, grad(func1v), G);
+    for (auto& x : inits) {
+        BFS(x, eps, sig, f, grad(f), G);
+    }
+    for (auto& x : inits) {
+        powell(x, eps, sig, f, grad(f), G);
+    }
+}
+
+void test1() {
+    matr_t inits = {{0.9, 1.1}, {1.02, 0.99}, {1.02, 1.02}};
+    runTest(inits, func1v);
 }
 
 void test2() {
-    vect_t x = {19, 15};
-    double eps = 1e-12;
-    double sig = 1e-8;
-    matr_t G = idenityMatrix(x.size());
-    auto run1 = [&] (vect_t const& x) {
-        BFS(x, eps, sig, func2v, grad(func2v), G);
-    };
-    auto run2 = [&] (vect_t const& x) {
-        powell(x, eps, sig, func2v, grad(func2v), G);
-    };
-
-    run1({-19, 15});
-    run1({19, 15});
-    run1({19, -15});
-    run1({59, -15});
-
-    run2({-19, 15});
-    run2({19, 15});
-    run2({19, -15});
-    run2({59, -15});
+    matr_t inits = {{-19, 15}, {19, 15}, {19, -15}, {59, -15}};
+    runTest(inits, func2v);
 }
 
 void test3() {
-    vect_t x = {1, -1, 1, -1};
-    double eps = 1e-12;
-    double sig = 1e-8;
-    matr_t G = idenityMatrix(x.size());
-
-    BFS(x, eps, sig, func3v, grad(func3v), G);
-    powell(x, eps, sig, func3v, grad(func3v), G);
+    matr_t inits = {{1, -1, 1, -1}, {1, 2, 1, 2}, {-5, 3, -6, -9}};
+    runTest(inits, func3v);
 }
 
 void test4() {
-    vect_t x = {1, -1};
-    double eps = 1e-12;
-    double sig = 1e-8;
-    matr_t G = idenityMatrix(x.size());
-
-    BFS(x, eps, sig, func4v, grad(func4v), G);
-    powell(x, eps, sig, func4v, grad(func4v), G);
+    matr_t inits = {{1, -1}, {1, 2}, {-4, 3}};
+    runTest(inits, func4v);
 }
 
 void gradTest() {
@@ -437,6 +406,12 @@ void gradTest() {
 
 int main() {
     cout.precision(12);
+    cout << "=== test1 ===" << endl;
+    test1();
+    cout << "=== test2 ===" << endl;
+    test2();
+    cout << "=== test3 ===" << endl;
+    test3();
+    cout << "=== test4 ===" << endl;
     test4();
-    // gradTest();
 }
