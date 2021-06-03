@@ -11,12 +11,7 @@ namespace fs = std::filesystem;
 using fs::directory_iterator;
 using namespace std;
 
-const char separator =
-#ifdef __linux__
-        '/';
-#else
-        '\\';
-#endif
+const char separator = '/';
 
 void UxSolution(vector<double>& x, int size, vector<int>& ia, vector<double>& al,
                 vector<double>& au, vector<double>& di, vector<double>& y) {
