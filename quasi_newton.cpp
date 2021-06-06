@@ -193,6 +193,15 @@ double brent(double a, double b, double eps, Func&& func) {
     return x1;
 }
 
+/**
+ * x - initial approximation for minimum
+ * eps - absolute error for quasiNewton
+ * sig - absolute error for brent
+ * f - function to minimize
+ * grad - gradient function of f
+ * G0 - initial hessian
+ * nextG - function that gives next hessian
+ */
 template<typename Vect, typename Matr, typename Func, typename GradFunc, typename NextG>
 Vect quasiNewton(Vect&& x, double eps, double sig, Func&& f, GradFunc&& grad, Matr&& G0, NextG&& nextG) {
     const double minAlpha = 0;
@@ -369,8 +378,8 @@ void test0() {
 template<typename Func>
 void runTest(matr_t& inits, Func&& f) {
     matr_t G = idenityMatrix(inits[0].size());
-    double eps = 1e-12; // absolute error for quasiNewton
-    double sig = 1e-8;  // absolute error for brent
+    double eps = 1e-12;
+    double sig = 1e-8;
     for (auto& x : inits) {
         BFS(x, eps, sig, f, grad(f), G);
     }
@@ -411,7 +420,7 @@ void gradTest() {
 }
 
 int main() {
-    cout.precision(8);
+    cout.precision(12);
     test1();
     test2();
     test3();
