@@ -64,6 +64,7 @@ funcs = {
     "parabola": lib.parabola,
     "brent": lib.brent,
     "parabola2": lib.parabola2,
+    "brent2": lib.brent2,
 }
 for f in funcs.values():
     setup_func(f)
@@ -135,6 +136,15 @@ while True:
         itercount = int(values["itercount"])
         if event == "parabola":
             function = funcs["parabola2"](accuracy, itercount)
+            dots = np.ctypeslib.as_array(
+                (ctypes.c_double * 300).from_address(
+                    ctypes.addressof(function.contents)
+                )
+            )
+            parabols = dots.reshape((-1, 3))
+
+        elif event == "brent":
+            function = funcs["brent2"](accuracy, itercount)
             dots = np.ctypeslib.as_array(
                 (ctypes.c_double * 300).from_address(
                     ctypes.addressof(function.contents)
