@@ -196,7 +196,7 @@ double brent(double a, double b, double eps, Func&& func) {
 template<typename Vect, typename Matr, typename Func, typename GradFunc, typename NextG>
 Vect quasiNewton(Vect&& x, double eps, double sig, Func&& f, GradFunc&& grad, Matr&& G0, NextG&& nextG) {
     const double minAlpha = 0;
-    const double maxAlpha = 1e6;
+    const double maxAlpha = 10;
 
     cout << "init: " << x << endl;
     auto G = G0;
@@ -221,8 +221,10 @@ Vect quasiNewton(Vect&& x, double eps, double sig, Func&& f, GradFunc&& grad, Ma
         w = move(w1);
     }
 
-    cout << "min: " << x << endl;
-    cout << "val: " << f(x) << "\n\n";
+    cout << "min: " << x << '\n';
+    // cout << "val: " << f(x) << "\n";
+    // cout << "grad: " << sqrt(norm2(grad(x))) << "\n";
+    cout << endl;
     return x;
 }
 
@@ -367,8 +369,8 @@ void test0() {
 template<typename Func>
 void runTest(matr_t& inits, Func&& f) {
     matr_t G = idenityMatrix(inits[0].size());
-    double eps = 1e-12;
-    double sig = 1e-8;
+    double eps = 1e-12; // absolute error for quasiNewton
+    double sig = 1e-8;  // absolute error for brent
     for (auto& x : inits) {
         BFS(x, eps, sig, f, grad(f), G);
     }
@@ -378,21 +380,25 @@ void runTest(matr_t& inits, Func&& f) {
 }
 
 void test1() {
-    matr_t inits = {{0.9, 1.1}, {1.02, 0.99}, {1.01, 1.01}};
+    cout << "=== test1 ===" << endl;
+    matr_t inits = {{0, 3}, {2, 0}, {3, 2}};
     runTest(inits, func1v);
 }
 
 void test2() {
-    matr_t inits = {{-19, 15}, {19, 15}, {19, -15}, {59, -15}};
+    cout << "=== test2 ===" << endl;
+    matr_t inits = {{-19, 15}, {19, 15}, {19, -15}};
     runTest(inits, func2v);
 }
 
 void test3() {
+    cout << "=== test3 ===" << endl;
     matr_t inits = {{1, -1, 1, -1}, {1, 2, 1, 2}, {-5, 3, -6, -9}};
     runTest(inits, func3v);
 }
 
 void test4() {
+    cout << "=== test4 ===" << endl;
     matr_t inits = {{1, -1}, {1, 2}, {-4, 3}};
     runTest(inits, func4v);
 }
@@ -405,13 +411,9 @@ void gradTest() {
 }
 
 int main() {
-    cout.precision(12);
-    cout << "=== test1 ===" << endl;
+    cout.precision(8);
     test1();
-    cout << "=== test2 ===" << endl;
     test2();
-    cout << "=== test3 ===" << endl;
     test3();
-    cout << "=== test4 ===" << endl;
     test4();
 }
